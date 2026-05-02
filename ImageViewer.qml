@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt.labs.platform  // Required for FolderDialog
+import Qt.labs.folderlistmodel // Required for scanning folders
 
 ApplicationWindow {
     id: window
@@ -9,7 +11,45 @@ ApplicationWindow {
     height: 600
     title: "Image Viewer"
 
-    property var fullImageUrl: ""
+    property string fullImageUrl: ""
+
+    // 1. The Dialog to pick a folder
+    FolderDialog {
+        id: folderDialog
+        title: "Select an Image Folder"
+        onAccepted: {
+            folderModel.folder = folderDialog.folder
+            fullImageUrl = "" // Close full view if open
+        }
+    }
+
+    // 2. The Model that scans the folder
+    FolderListModel {
+        id: folderModel
+        folder: "file:///." // Default starting path
+        nameFilters: ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+        showDirs: false
+    }
+
+    header: ToolBar {
+        background: Rectangle { color: "#1f1f1f" }
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 10
+
+            Button {
+                text: "Open Folder"
+                onClicked: folderDialog.open()
+            }
+
+            Label {
+                text: folderModel.folder
+                color: "white"
+                elide: Text.ElideMiddle
+                Layout.fillWidth: true
+            }
+        }
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -21,8 +61,10 @@ ApplicationWindow {
             visible: fullImageUrl === ""
             cellWidth: 150
             cellHeight: 150
+            clip: true
 
-            model: imageUrls
+            // Link the GridView to our FolderListModel
+            model: folderModel
 
             delegate: Rectangle {
                 width: gridView.cellWidth - 10
@@ -37,7 +79,8 @@ ApplicationWindow {
                     anchors.centerIn: parent
                     width: parent.width - 4
                     height: parent.height - 4
-                    source: modelData
+                    // FolderListModel provides 'fileURL' for the source
+                    source: model.fileUrl
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     cache: true
@@ -47,11 +90,12 @@ ApplicationWindow {
 
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: fullImageUrl = modelData
+                    onClicked: fullImageUrl = model.fileUrl
                 }
             }
         }
 
+        // Full Image View
         Image {
             id: fullImage
             anchors.fill: parent
@@ -59,22 +103,26 @@ ApplicationWindow {
             source: fullImageUrl
             fillMode: Image.PreserveAspectFit
             asynchronous: true
+
+            // Background to hide the grid behind it
+            Rectangle {
+                anchors.fill: parent
+                color: "black"
+                z: -1
+            }
         }
 
         Text {
             anchors.centerIn: parent
-            visible: imageUrls.length === 0 && fullImageUrl === ""
+            visible: folderModel.count === 0 && fullImageUrl === ""
             color: "#aaa"
             text: "No images found in folder"
             font.pixelSize: 16
         }
     }
 
-    //focus: true
     Shortcut {
         sequence: "Escape"
-        onActivated: {
-            fullImageUrl = ""
-        }
+        onActivated: fullImageUrl = ""
     }
 }
