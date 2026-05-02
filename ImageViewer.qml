@@ -70,8 +70,11 @@ ApplicationWindow {
         }
     }
 
-    focus: true
-    Keys.onEscapePressed: {
-        fullImageUrl = ""
+    //focus: true
+    Shortcut {
+        sequence: "Escape"
+        onActivated: {
+            fullImageUrl = ""
+        }
     }
 }
