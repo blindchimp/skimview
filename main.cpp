@@ -11,12 +11,16 @@ int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
+    const char *path = ".";
     if (argc < 2) {
         qWarning() << "Usage: ImageViewer <folder_path>";
-        return 1;
+    }
+    else
+    {
+      path = argv[1];
     }
 
-    QString folderPath = QString::fromLocal8Bit(argv[1]);
+    QString folderPath = QString::fromLocal8Bit(path);
     QDir dir(folderPath);
 
     if (!dir.exists()) {
