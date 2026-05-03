@@ -14,6 +14,8 @@ find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2)
 
 qt_add_executable(ImageViewer
     main.cpp
+    trashhandler.h
+    trashhandler.cpp
 )
 
 set_target_properties(ImageViewer PROPERTIES

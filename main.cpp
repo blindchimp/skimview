@@ -6,6 +6,7 @@
 #include <QStringList>
 #include <QUrl>
 #include <QDebug>
+#include "trashhandler.h"
 
 int main(int argc, char *argv[])
 {
@@ -39,6 +40,10 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     QQmlContext *context = engine.rootContext();
     context->setContextProperty("imageUrls", QVariant::fromValue(imageUrls));
+
+    // Register TrashHandler for use in QML
+    TrashHandler trashHandler;
+    context->setContextProperty("trashHandler", &trashHandler);
 
     const QUrl url(QStringLiteral("qrc:/ImageViewer/ImageViewer.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
