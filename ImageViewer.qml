@@ -90,7 +90,10 @@ ApplicationWindow {
 
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: fullImageUrl = model.fileUrl
+                    onClicked: {
+                        currentIndex = model.index
+                        fullImageUrl = model.fileUrl
+                    }
                 }
             }
         }
@@ -135,8 +138,41 @@ ApplicationWindow {
         }
     }
 
+    property int currentIndex: 0
+
     Shortcut {
         sequence: "Escape"
         onActivated: fullImageUrl = ""
+    }
+
+    // Keyboard navigation in full image view
+    Shortcut {
+        sequence: "Left"
+        enabled: fullImageUrl !== "" && folderModel.count > 0
+        onActivated: {
+            currentIndex = (currentIndex - 1 + folderModel.count) % folderModel.count
+            fullImageUrl = folderModel.get(currentIndex).fileUrl
+        }
+    }
+
+    Shortcut {
+        sequence: "Right"
+        enabled: fullImageUrl !== "" && folderModel.count > 0
+        onActivated: {
+            currentIndex = (currentIndex + 1) % folderModel.count
+            fullImageUrl = folderModel.get(currentIndex).fileUrl
+        }
+    }
+
+    // Update currentIndex when opening a different image
+    onFullImageUrlChanged: {
+        if (fullImageUrl !== "") {
+            for (var i = 0; i < folderModel.count; i++) {
+                if (folderModel.get(i).fileUrl === fullImageUrl) {
+                    currentIndex = i
+                    break
+                }
+            }
+        }
     }
 }
