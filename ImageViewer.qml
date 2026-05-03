@@ -151,7 +151,7 @@ ApplicationWindow {
         enabled: fullImageUrl !== "" && folderModel.count > 0
         onActivated: {
             currentIndex = (currentIndex - 1 + folderModel.count) % folderModel.count
-            fullImageUrl = folderModel.get(currentIndex).fileUrl
+            fullImageUrl = folderModel.get(currentIndex, "fileUrl")
         }
     }
 
@@ -160,7 +160,7 @@ ApplicationWindow {
         enabled: fullImageUrl !== "" && folderModel.count > 0
         onActivated: {
             currentIndex = (currentIndex + 1) % folderModel.count
-            fullImageUrl = folderModel.get(currentIndex).fileUrl
+            fullImageUrl = folderModel.get(currentIndex, "fileUrl")
         }
     }
 
@@ -168,7 +168,7 @@ ApplicationWindow {
     onFullImageUrlChanged: {
         if (fullImageUrl !== "") {
             for (var i = 0; i < folderModel.count; i++) {
-                if (folderModel.get(i).fileUrl === fullImageUrl) {
+                if (folderModel.get(i, "fileUrl") === fullImageUrl) {
                     currentIndex = i
                     break
                 }
