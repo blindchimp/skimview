@@ -93,7 +93,7 @@ echo "App bundle created: $APP_BUNDLE"
 
 # Run macdeployqt
 echo "Running macdeployqt..."
-MACDEPLOYQT_ARGS=("$APP_BUNDLE" -qmldir="$PROJECT_DIR" -verbose=2 -always-overwrite)
+MACDEPLOYQT_ARGS=("$APP_BUNDLE" -qmldir="$PROJECT_DIR" -verbose=1 -always-overwrite)
 
 # Add DMG creation
 DMG_NAME="$APP_NAME-$(date +%Y%m%d).dmg"

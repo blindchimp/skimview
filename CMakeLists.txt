@@ -16,13 +16,23 @@ qt_add_executable(ImageViewer
     main.cpp
     trashhandler.h
     trashhandler.cpp
+    icon.icns
 )
+
+if(APPLE)
+    set(MACOSX_BUNDLE_ICON_FILE "icon.icns")
+set(app_icon "${CMAKE_CURRENT_SOURCE_DIR}/icon.icns")
+set_source_files_properties(${app_icon} PROPERTIES
+    MACOSX_PACKAGE_LOCATION "Resources"
+)
+endif()
 
 set_target_properties(ImageViewer PROPERTIES
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_GUI_IDENTIFIER "com.example.ImageViewer"
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+   # MACOSX_BUNDLE_ICON_FILE icon.icns
 )
 
 qt_add_qml_module(ImageViewer
