@@ -7,11 +7,15 @@ set -e
 
 # Configuration
 QT_PATH="$HOME/Qt/6.11.0/macos"
+QT_BIN="$QT_PATH/bin"
 APP_NAME="ImageViewer"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$PROJECT_DIR/build"
 INSTALL_DIR="$BUILD_DIR/install"
 DMG_DIR="$BUILD_DIR/dmg"
+
+# Add Qt bin to PATH so all bundling commands are found in the same place
+export PATH="$QT_BIN:$PATH"
 
 # Parse arguments
 SIGN_APP=false
@@ -89,11 +93,14 @@ echo "App bundle created: $APP_BUNDLE"
 
 # Run macdeployqt
 echo "Running macdeployqt..."
-"$QT_PATH/bin/macdeployqt" "$APP_BUNDLE" \
-    -verbose=1 \
-    -always-overwrite
+MACDEPLOYQT_ARGS=("$APP_BUNDLE" -qmldir="$PROJECT_DIR" -verbose=2 -always-overwrite)
 
-# Optional: Code signing
+# Add DMG creation
+DMG_NAME="$APP_NAME-$(date +%Y%m%d).dmg"
+DMG_PATH="$BUILD_DIR/$DMG_NAME"
+MACDEPLOYQT_ARGS+=(-dmg "$DMG_PATH")
+
+# Add code signing if requested
 if [ "$SIGN_APP" = true ]; then
     echo ""
     echo "=========================================="
@@ -117,56 +124,21 @@ if [ "$SIGN_APP" = true ]; then
     fi
 
     echo "Using identity: $SIGN_IDENTITY"
-
-    # Sign the app bundle
-    echo "Signing $APP_BUNDLE..."
-    codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_BUNDLE" --verbose
-
-    # Verify signature
-    echo "Verifying signature..."
-    codesign --verify --verbose "$APP_BUNDLE"
-    if [ $? -eq 0 ]; then
-        echo "Signature verified successfully"
-    else
-        echo "Warning: Signature verification failed"
-    fi
+    MACDEPLOYQT_ARGS+=(-codesign "$SIGN_IDENTITY")
 fi
 
-# Create DMG
-echo ""
-echo "=========================================="
-echo "Creating DMG"
-echo "=========================================="
-
-# Clean up DMG directory
-rm -rf "$DMG_DIR"
-mkdir -p "$DMG_DIR"
-
-# Copy app to DMG directory
-cp -R "$APP_BUNDLE" "$DMG_DIR/"
-
-# Create DMG
-DMG_NAME="$APP_NAME-$(date +%Y%m%d).dmg"
-DMG_PATH="$BUILD_DIR/$DMG_NAME"
-
-echo "Creating DMG: $DMG_PATH"
-hdiutil create -volname "$APP_NAME" \
-    -srcfolder "$DMG_DIR" \
-    -ov \
-    -format UDZO \
-    "$DMG_PATH"
-
-# Optional: Sign the DMG
-if [ "$SIGN_APP" = true ] && [ -n "$SIGN_IDENTITY" ]; then
-    echo "Signing DMG..."
-    codesign --force --sign "$SIGN_IDENTITY" "$DMG_PATH" --verbose
-fi
+# Run macdeployqt with all options
+macdeployqt "${MACDEPLOYQT_ARGS[@]}"
 
 echo ""
 echo "=========================================="
 echo "Build Complete!"
 echo "=========================================="
 echo "App bundle: $APP_BUNDLE"
-echo "DMG file: $DMG_PATH"
-echo ""
-echo "To install, open the DMG and drag $APP_NAME.app to Applications"
+if [ -f "$DMG_PATH" ]; then
+    echo "DMG file: $DMG_PATH"
+    echo ""
+    echo "To install, open the DMG and drag $APP_NAME.app to Applications"
+else
+    echo "DMG creation may have failed - check output above"
+fi
