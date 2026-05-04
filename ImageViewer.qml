@@ -70,8 +70,8 @@ ApplicationWindow {
                 width: gridView.cellWidth - 10
                 height: gridView.cellHeight - 10
                 color: "#3b3b3b"
-                border.color: "#555"
-                border.width: 1
+                border.color: (model.index === currentIndex) ? "red" : "#555"
+                border.width: (model.index === currentIndex) ? 2 : 1
                 radius: 4
 
                 Image {
