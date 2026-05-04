@@ -12,6 +12,7 @@ ApplicationWindow {
     title: "Image Viewer"
 
     property string fullImageUrl: ""
+    property int gridCurrentIndex: -1
 
     // 1. The Dialog to pick a folder
     FolderDialog {
@@ -70,8 +71,8 @@ ApplicationWindow {
                 width: gridView.cellWidth - 10
                 height: gridView.cellHeight - 10
                 color: "#3b3b3b"
-                border.color: (model.index === currentIndex) ? "red" : "#555"
-                border.width: (model.index === currentIndex) ? 2 : 1
+                border.color: (model.index === gridCurrentIndex) ? "red" : "#555"
+                border.width: (model.index === gridCurrentIndex) ? 2 : 1
                 radius: 4
 
                 Image {
@@ -91,7 +92,7 @@ ApplicationWindow {
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
-                        currentIndex = model.index
+                        gridCurrentIndex = model.index
                         fullImageUrl = model.fileUrl
                     }
                 }
@@ -125,8 +126,8 @@ ApplicationWindow {
                     //folderModel.folder = "file:///tmp"  // Temp folder to force refresh
                     //folderModel.folder = currentFolder
                     // Load next image instead of going back to thumbnails
-                    currentIndex = (currentIndex + 1) % folderModel.count
-                    fullImageUrl = folderModel.get(currentIndex, "fileUrl")
+                    gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
+                    fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
                 }
             }
         }
@@ -140,8 +141,6 @@ ApplicationWindow {
         }
     }
 
-    property int currentIndex: 0
-
     Shortcut {
         sequence: "Escape"
         onActivated: fullImageUrl = ""
@@ -152,8 +151,8 @@ ApplicationWindow {
         sequence: "Left"
         enabled: fullImageUrl !== "" && folderModel.count > 0
         onActivated: {
-            currentIndex = (currentIndex - 1 + folderModel.count) % folderModel.count
-            fullImageUrl = folderModel.get(currentIndex, "fileUrl")
+            gridCurrentIndex = (gridCurrentIndex - 1 + folderModel.count) % folderModel.count
+            fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
         }
     }
 
@@ -161,17 +160,17 @@ ApplicationWindow {
         sequence: "Right"
         enabled: fullImageUrl !== "" && folderModel.count > 0
         onActivated: {
-            currentIndex = (currentIndex + 1) % folderModel.count
-            fullImageUrl = folderModel.get(currentIndex, "fileUrl")
+            gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
+            fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
         }
     }
 
-    // Update currentIndex when opening a different image
+    // Update gridCurrentIndex when opening a different image
     onFullImageUrlChanged: {
         if (fullImageUrl !== "") {
             for (var i = 0; i < folderModel.count; i++) {
                 if (folderModel.get(i, "fileUrl") === fullImageUrl) {
-                    currentIndex = i
+                    gridCurrentIndex = i
                     break
                 }
             }
