@@ -29,21 +29,23 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    QStringList imageExtensions = {"*.jpg", "*.jpeg", "*.png", "*.gif", "*.bmp", "*.webp", "*.tiff", "*.heic", "*.heif"};
-    QFileInfoList imageFiles = dir.entryInfoList(imageExtensions, QDir::Files);
+    // QStringList imageExtensions = {"*.jpg", "*.jpeg", "*.png", "*.gif", "*.bmp", "*.webp", "*.tiff", "*.heic", "*.heif"};
+    // QFileInfoList imageFiles = dir.entryInfoList(imageExtensions, QDir::Files);
 
-    QStringList imageUrls;
-    for (const QFileInfo &fileInfo : imageFiles) {
-        imageUrls.append(QUrl::fromLocalFile(fileInfo.absoluteFilePath()).toString());
-    }
+    // QStringList imageUrls;
+    // for (const QFileInfo &fileInfo : imageFiles) {
+    //     imageUrls.append(QUrl::fromLocalFile(fileInfo.absoluteFilePath()).toString());
+    // }
 
     QQmlApplicationEngine engine;
     QQmlContext *context = engine.rootContext();
-    context->setContextProperty("imageUrls", QVariant::fromValue(imageUrls));
 
     // Register TrashHandler for use in QML
     TrashHandler trashHandler;
     context->setContextProperty("trashHandler", &trashHandler);
+
+    // Pass the initial folder path to QML as a file:// URL
+    context->setContextProperty("initialFolder", QVariant::fromValue(QUrl::fromLocalFile(dir.absolutePath()).toString()));
 
     const QUrl url(QStringLiteral("qrc:/ImageViewer/ImageViewer.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
