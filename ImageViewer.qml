@@ -114,17 +114,19 @@ ApplicationWindow {
                 z: -1
             }
 
-            // Trash shortcut - press 'd' to move image to trash and reload
+            // Trash shortcut - press 'd' to move image to trash and load next image
             Shortcut {
                 sequence: "d"
                 enabled: fullImageUrl !== ""
                 onActivated: {
                     trashHandler.moveToTrash(fullImageUrl)
                     // Reload thumbnails by reassigning folder
-                    var currentFolder = folderModel.folder
-                    folderModel.folder = "file:///tmp"  // Temp folder to force refresh
-                    folderModel.folder = currentFolder
-                    fullImageUrl = ""
+                    //var currentFolder = folderModel.folder
+                    //folderModel.folder = "file:///tmp"  // Temp folder to force refresh
+                    //folderModel.folder = currentFolder
+                    // Load next image instead of going back to thumbnails
+                    currentIndex = (currentIndex + 1) % folderModel.count
+                    fullImageUrl = folderModel.get(currentIndex, "fileUrl")
                 }
             }
         }
