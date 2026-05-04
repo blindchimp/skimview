@@ -13,8 +13,8 @@ ApplicationWindow {
 
     property string fullImageUrl: ""
     property int gridCurrentIndex: -1
-    // Property to receive initial folder from C++ (file:// URL or local path)
-    property string initialFolder: "file:///."
+    // Property to receive initial folder from C++ (as QUrl string)
+    //property var initialFolder: null
 
     // 1. The Dialog to pick a folder
     FolderDialog {
@@ -29,9 +29,15 @@ ApplicationWindow {
     // 2. The Model that scans the folder
     FolderListModel {
         id: folderModel
-        folder: initialFolder
         nameFilters: ["*.png", "*.jpg", "*.jpeg", "*.webp"]
         showDirs: false
+    }
+
+    // Set initial folder when component is completed
+    Component.onCompleted: {
+        if (initialFolder !== "") {
+            folderModel.folder = initialFolder
+        }
     }
 
     header: ToolBar {

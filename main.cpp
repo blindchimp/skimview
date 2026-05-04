@@ -12,30 +12,25 @@ int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
-    const char *path = ".";
-    if (argc < 2) {
-        qWarning() << "Usage: ImageViewer <folder_path>";
-    }
-    else
+    bool initial_folder = false;
+    const char *path = 0;
+
+    if(argc >= 2)
     {
       path = argv[1];
+      initial_folder = true;
     }
-
     QString folderPath = QString::fromLocal8Bit(path);
     QDir dir(folderPath);
 
-    if (!dir.exists()) {
-        qWarning() << "Folder does not exist:" << folderPath;
-        return 1;
+    if(initial_folder)
+    {
+
+        if (!dir.exists()) {
+            qWarning() << "Folder does not exist:" << folderPath;
+            initial_folder = false;
+        }
     }
-
-    // QStringList imageExtensions = {"*.jpg", "*.jpeg", "*.png", "*.gif", "*.bmp", "*.webp", "*.tiff", "*.heic", "*.heif"};
-    // QFileInfoList imageFiles = dir.entryInfoList(imageExtensions, QDir::Files);
-
-    // QStringList imageUrls;
-    // for (const QFileInfo &fileInfo : imageFiles) {
-    //     imageUrls.append(QUrl::fromLocalFile(fileInfo.absoluteFilePath()).toString());
-    // }
 
     QQmlApplicationEngine engine;
     QQmlContext *context = engine.rootContext();
@@ -45,7 +40,15 @@ int main(int argc, char *argv[])
     context->setContextProperty("trashHandler", &trashHandler);
 
     // Pass the initial folder path to QML as a file:// URL
-    context->setContextProperty("initialFolder", QVariant::fromValue(QUrl::fromLocalFile(dir.absolutePath()).toString()));
+    if(initial_folder)
+    {
+        context->setContextProperty("initialFolder", QVariant::fromValue(QUrl::fromLocalFile(dir.absolutePath()).toString()));
+    }
+    else
+    {
+        context->setContextProperty("initialFolder", QVariant(""));
+
+    }
 
     const QUrl url(QStringLiteral("qrc:/ImageViewer/ImageViewer.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
