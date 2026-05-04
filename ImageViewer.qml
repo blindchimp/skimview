@@ -71,6 +71,8 @@ ApplicationWindow {
             cellWidth: 150
             cellHeight: 150
             clip: true
+            focus: true
+            interactive: false
 
             // Link the GridView to our FolderListModel
             model: folderModel
@@ -105,6 +107,54 @@ ApplicationWindow {
                     }
                 }
             }
+
+            // Keyboard navigation
+            Keys.onLeftPressed: {
+                if (folderModel.count > 0) {
+                    gridCurrentIndex = (gridCurrentIndex - 1 + folderModel.count) % folderModel.count
+                    gridView.currentIndex = gridCurrentIndex
+                    gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+                }
+            }
+            Keys.onRightPressed: {
+                if (folderModel.count > 0) {
+                    gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
+                    gridView.currentIndex = gridCurrentIndex
+                    gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+                }
+            }
+            Keys.onUpPressed: {
+                if (folderModel.count > 0) {
+                    // Calculate number of columns based on grid width
+                    var cols = Math.floor((gridView.width + 10) / 150)
+                    if (cols > 0) {
+                        gridCurrentIndex = (gridCurrentIndex - cols + folderModel.count) % folderModel.count
+                        gridView.currentIndex = gridCurrentIndex
+                        gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+                    }
+                }
+            }
+            Keys.onDownPressed: {
+                if (folderModel.count > 0) {
+                    // Calculate number of columns based on grid width
+                    var cols = Math.floor((gridView.width + 10) / 150)
+                    if (cols > 0) {
+                        gridCurrentIndex = (gridCurrentIndex + cols) % folderModel.count
+                        gridView.currentIndex = gridCurrentIndex
+                        gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+                    }
+                }
+            }
+            Keys.onEnterPressed: {
+                if (gridCurrentIndex >= 0 && gridCurrentIndex < folderModel.count) {
+                    fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+                }
+            }
+            Keys.onSpacePressed: {
+                if (gridCurrentIndex >= 0 && gridCurrentIndex < folderModel.count) {
+                    fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+                }
+            }
         }
 
         // Full Image View
@@ -122,22 +172,6 @@ ApplicationWindow {
                 color: "black"
                 z: -1
             }
-
-            // Trash shortcut - press 'd' to move image to trash and load next image
-            Shortcut {
-                sequence: "d"
-                enabled: fullImageUrl !== ""
-                onActivated: {
-                    trashHandler.moveToTrash(fullImageUrl)
-                    // Reload thumbnails by reassigning folder
-                    //var currentFolder = folderModel.folder
-                    //folderModel.folder = "file:///tmp"  // Temp folder to force refresh
-                    //folderModel.folder = currentFolder
-                    // Load next image instead of going back to thumbnails
-                    gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
-                    fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
-                }
-            }
         }
 
         Text {
@@ -149,9 +183,31 @@ ApplicationWindow {
         }
     }
 
+    // Global shortcuts
     Shortcut {
         sequence: "Escape"
         onActivated: fullImageUrl = ""
+    }
+
+    // Keyboard navigation in thumbnail grid
+    Shortcut {
+        sequence: "Left"
+        enabled: fullImageUrl === "" && folderModel.count > 0
+        onActivated: {
+            gridCurrentIndex = (gridCurrentIndex - 1 + folderModel.count) % folderModel.count
+            gridView.currentIndex = gridCurrentIndex
+            gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+        }
+    }
+
+    Shortcut {
+        sequence: "Right"
+        enabled: fullImageUrl === "" && folderModel.count > 0
+        onActivated: {
+            gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
+            gridView.currentIndex = gridCurrentIndex
+            gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+        }
     }
 
     // Keyboard navigation in full image view
@@ -168,6 +224,18 @@ ApplicationWindow {
         sequence: "Right"
         enabled: fullImageUrl !== "" && folderModel.count > 0
         onActivated: {
+            gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
+            fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+        }
+    }
+
+    // Trash shortcut - press 'd' to move image to trash and load next image
+    Shortcut {
+        sequence: "d"
+        enabled: fullImageUrl !== ""
+        onActivated: {
+            trashHandler.moveToTrash(fullImageUrl)
+            // Load next image instead of going back to thumbnails
             gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
             fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
         }
