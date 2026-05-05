@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Build and package script for ImageViewer Qt6 app
-# Usage: ./build_dmg.sh [--sign] [--identity "Developer ID Application: Your Name"]
+# Usage: ./build_dmg.sh [--sign] [--identity "Developer ID Application: Your Name"] [--notarize]
 
 set -e
 
@@ -10,7 +10,7 @@ QT_PATH="$HOME/Qt/6.11.0/macos"
 QT_BIN="$QT_PATH/bin"
 APP_NAME="ImageViewer"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="$PROJECT_DIR/build"
+BUILD_DIR="/tmp/build"
 INSTALL_DIR="$BUILD_DIR/install"
 DMG_DIR="$BUILD_DIR/dmg"
 
@@ -20,6 +20,7 @@ export PATH="$QT_BIN:$PATH"
 # Parse arguments
 SIGN_APP=false
 SIGN_IDENTITY=""
+NOTARIZE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -31,13 +32,18 @@ while [[ $# -gt 0 ]]; do
             SIGN_IDENTITY="$2"
             shift 2
             ;;
+        --notarize)
+            NOTARIZE=true
+            shift
+            ;;
         --help)
-            echo "Usage: $0 [--sign] [--identity \"Developer ID Application: Your Name\"]"
+            echo "Usage: $0 [--sign] [--identity \"Developer ID Application: Your Name\"] [--notarize]"
             echo ""
             echo "Options:"
             echo "  --sign              Enable code signing (requires valid certificate)"
             echo "  --identity <id>    Specify signing identity (default: auto-detect)"
-            echo "  --help              Show this help message"
+            echo "  --notarize         Enable notarization (requires 'notary' profile configured)"
+            echo "  --help             Show this help message"
             exit 0
             ;;
         *)
@@ -57,6 +63,7 @@ echo "Sign app: $SIGN_APP"
 if [ "$SIGN_APP" = true ]; then
     echo "Identity: ${SIGN_IDENTITY:-auto-detect}"
 fi
+echo "Notarize: $NOTARIZE"
 echo ""
 
 # Check Qt installation
@@ -73,7 +80,7 @@ mkdir -p "$BUILD_DIR"
 # Configure with CMake
 echo "Configuring with CMake..."
 cd "$BUILD_DIR"
-cmake .. \
+cmake "$PROJECT_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$QT_PATH" \
     -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
@@ -124,11 +131,56 @@ if [ "$SIGN_APP" = true ]; then
     fi
 
     echo "Using identity: $SIGN_IDENTITY"
-    MACDEPLOYQT_ARGS+=(-codesign="$SIGN_IDENTITY")
+	if [ "$NOTARIZE" = true ]; then
+	    MACDEPLOYQT_ARGS+=(-sign-for-notarization="$SIGN_IDENTITY")
+	else
+	    MACDEPLOYQT_ARGS+=(-codesign="$SIGN_IDENTITY")
+	fi
 fi
 
 # Run macdeployqt with all options
 macdeployqt "${MACDEPLOYQT_ARGS[@]}"
+
+# Notarization if requested
+if [ "$NOTARIZE" = true ]; then
+    if [ ! -f "$DMG_PATH" ]; then
+        echo "Error: DMG file not found at $DMG_PATH, cannot notarize"
+        exit 1
+    fi
+
+    echo ""
+    echo "=========================================="
+    echo "Notarization"
+    echo "=========================================="
+
+    echo "Submitting DMG for notarization using 'notary' profile..."
+    echo "This may take a few minutes..."
+
+    # Submit for notarization using profile
+    NOTARIZE_OUTPUT=$(xcrun notarytool submit "$DMG_PATH" \
+        --profile notary \
+        --wait \
+        --output json)
+
+    echo "$NOTARIZE_OUTPUT"
+
+    # Check if notarization succeeded
+    NOTARIZE_STATUS=$(echo "$NOTARIZE_OUTPUT" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+
+    if [ "$NOTARIZE_STATUS" = "Accepted" ]; then
+        echo "Notarization successful!"
+
+        echo ""
+        echo "Stapling notarization ticket..."
+        xcrun stapler staple "$DMG_PATH"
+
+        echo "Stapling complete!"
+    else
+        echo "Error: Notarization failed with status: $NOTARIZE_STATUS"
+        echo "Check the output above for details"
+        exit 1
+    fi
+fi
 
 echo ""
 echo "=========================================="
