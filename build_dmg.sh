@@ -124,7 +124,7 @@ if [ "$SIGN_APP" = true ]; then
     fi
 
     echo "Using identity: $SIGN_IDENTITY"
-    MACDEPLOYQT_ARGS+=(-codesign "$SIGN_IDENTITY")
+    MACDEPLOYQT_ARGS+=(-codesign="$SIGN_IDENTITY")
 fi
 
 # Run macdeployqt with all options

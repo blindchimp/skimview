@@ -72,7 +72,6 @@ ApplicationWindow {
             cellHeight: 150
             clip: true
             focus: true
-            interactive: false
 
             // Link the GridView to our FolderListModel
             model: folderModel
