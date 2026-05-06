@@ -141,6 +141,11 @@ fi
 # Run macdeployqt with all options
 macdeployqt "${MACDEPLOYQT_ARGS[@]}"
 
+# not sure why macdeployqt doesn't sign the resulting dmg when you ask it to
+if [ "$SIGN_APP" = true ]; then
+	codesign -s "$SIGN_IDENTITY" "$DMG_PATH"
+fi
+
 # Notarization if requested
 if [ "$NOTARIZE" = true ]; then
     if [ ! -f "$DMG_PATH" ]; then
