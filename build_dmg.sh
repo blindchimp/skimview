@@ -103,7 +103,7 @@ echo "Running macdeployqt..."
 MACDEPLOYQT_ARGS=("$APP_BUNDLE" -qmldir="$PROJECT_DIR" -verbose=1 -always-overwrite)
 
 # Add DMG creation
-DMG_NAME="$APP_NAME-$(date +%Y%m%d).dmg"
+DMG_NAME="$APP_NAME.dmg"
 DMG_PATH="$BUILD_DIR/$DMG_NAME"
 MACDEPLOYQT_ARGS+=(-dmg "$DMG_PATH")
 
@@ -158,9 +158,9 @@ if [ "$NOTARIZE" = true ]; then
 
     # Submit for notarization using profile
     NOTARIZE_OUTPUT=$(xcrun notarytool submit "$DMG_PATH" \
-        --profile notary \
+        --keychain-profile notary \
         --wait \
-        --output json)
+        --output-format json)
 
     echo "$NOTARIZE_OUTPUT"
 
