@@ -1,0 +1,6 @@
+some little things to include:
+* buttons for sorting on time/name asc/desc
+* zoom w/ pinching or buttons
+* search for time/name
+* content via image model
+
