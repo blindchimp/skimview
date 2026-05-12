@@ -281,47 +281,20 @@ ApplicationWindow {
         }
 
         // Full Image View with zoom
-        PinchArea {
-            id: pinchArea
+
+
+        Image {
+            id: fullImage
             anchors.fill: parent
-            enabled: fullImageUrl !== ""
+            source: fullImageUrl
+            fillMode: Image.PreserveAspectFit
+            asynchronous: true
+            visible: fullImageUrl !== ""
 
-            property real zoomScale: 1.0
-            property real minScale: 0.25
-            property real maxScale: 4.0
-
-            onPinchUpdated: {
-                var newScale = pinchArea.zoomScale * pinch.scale
-                pinchArea.zoomScale = Math.max(pinchArea.minScale, Math.min(pinchArea.maxScale, newScale))
-            }
-
-            onPinchFinished: {
-                pinchArea.zoomScale = Math.max(pinchArea.minScale, Math.min(pinchArea.maxScale, pinchArea.zoomScale))
-            }
-
-            Image {
-                id: fullImage
-                anchors.fill: parent
-                source: fullImageUrl
-                fillMode: Image.PreserveAspectFit
-                asynchronous: true
-
-                transform: Scale {
-                    id: imageScale
-                    origin.x: fullImage.width / 2
-                    origin.y: fullImage.height / 2
-                    xScale: pinchArea.zoomScale
-                    yScale: pinchArea.zoomScale
-                }
-            }
-
-            // Background to hide the grid behind it
-            Rectangle {
-                anchors.fill: parent
-                color: "black"
-                z: -1
-            }
         }
+
+
+
 
         Text {
             anchors.centerIn: parent
