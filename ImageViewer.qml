@@ -31,6 +31,8 @@ ApplicationWindow {
         id: folderModel
         nameFilters: ["*.png", "*.jpg", "*.jpeg", "*.webp"]
         showDirs: false
+        sortField: currentSortField
+        sortReversed: !sortAscending
     }
 
     // Set initial folder when component is completed
@@ -40,23 +42,145 @@ ApplicationWindow {
         }
     }
 
+    // Properties for sort control
+    property int currentSortField: FolderListModel.Name
+    property bool sortAscending: true
+
+    // Property for search filter
+    property string searchFilter: ""
+
     header: ToolBar {
         background: Rectangle { color: "#1f1f1f" }
-        RowLayout {
+        ColumnLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10
+            spacing: 0
 
-            Button {
-                text: "Open Folder"
-                onClicked: folderDialog.open()
-            }
-
-            Label {
-                text: folderModel.folder
-                color: "white"
-                elide: Text.ElideMiddle
+            // Top row: Open button, folder path, copy button
+            RowLayout {
                 Layout.fillWidth: true
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+
+                Button {
+                    text: "Open Folder"
+                    onClicked: folderDialog.open()
+                }
+
+                Label {
+                    id: folderPathLabel
+                    text: folderModel.folder
+                    color: "white"
+                    elide: Text.ElideMiddle
+                    Layout.fillWidth: true
+                }
+
+                Button {
+                    text: "Copy Name"
+                    visible: gridCurrentIndex >= 0 && gridCurrentIndex < folderModel.count
+                    onClicked: {
+                        var filename = folderModel.get(gridCurrentIndex, "fileName")
+                        Qt.application.clipboard = filename
+                    }
+                }
+
+                Button {
+                    text: "Zoom x2"
+                    onClicked: {
+                        if (fullImageUrl !== "") {
+                            pinchArea.zoomScale = 2.0
+                        }
+                    }
+                }
+
+                Button {
+                    text: "Zoom 1:1"
+                    onClicked: {
+                        if (fullImageUrl !== "") {
+                            pinchArea.zoomScale = 1.0
+                        }
+                    }
+                }
+
+                Button {
+                    text: "Zoom 1/2"
+                    onClicked: {
+                        if (fullImageUrl !== "") {
+                            pinchArea.zoomScale = 0.5
+                        }
+                    }
+                }
             }
+
+            // Second row: Current filename display
+            RowLayout {
+                Layout.fillWidth: true
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+
+                Label {
+                    text: gridCurrentIndex >= 0 && gridCurrentIndex < folderModel.count
+                        ? folderModel.get(gridCurrentIndex, "fileName")
+                        : ""
+                    color: "#aaaaaa"
+                    elide: Text.ElideMiddle
+                    Layout.fillWidth: true
+                    font.bold: true
+                }
+            }
+
+            // Third row: Sort buttons and search
+            RowLayout {
+                Layout.fillWidth: true
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+
+                // Sort by name
+                Button {
+                    text: currentSortField === FolderListModel.Name ? (sortAscending ? "Name Asc" : "Name Desc")
+                                                                      : "Name"
+                    onClicked: {
+                        currentSortField = FolderListModel.Name
+                    }
+                }
+
+                // Sort by date
+                Button {
+                    text: currentSortField === FolderListModel.Time ? (sortAscending ? "Date Asc" : "Date Desc")
+                                                                      : "Date"
+                    onClicked: {
+                        currentSortField = FolderListModel.Time
+                    }
+                }
+
+                // Toggle sort order
+                Button {
+                    text: sortAscending ? "Ascending" : "Descending"
+                    onClicked: sortAscending = !sortAscending
+                }
+
+                // Search filter
+                TextField {
+                    id: searchField
+                    Layout.fillWidth: true
+                    placeholderText: "Search filename..."
+                    onTextEdited: {
+                        searchFilter = text
+                        updateFilters()
+                    }
+                }
+            }
+        }
+    }
+
+    // Function to update folder model filters
+    function updateFilters() {
+        if (searchFilter.length === 0) {
+            folderModel.nameFilters = ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+        } else {
+            // Create a filter that matches files containing the search text
+            // FolderListModel supports wildcards with *
+            var pattern = "*" + searchFilter + "*"
+            folderModel.nameFilters = [pattern, "*.png", "*.jpg", "*.jpeg", "*.webp"]
         }
     }
 
@@ -156,14 +280,40 @@ ApplicationWindow {
             }
         }
 
-        // Full Image View
-        Image {
-            id: fullImage
+        // Full Image View with zoom
+        PinchArea {
+            id: pinchArea
             anchors.fill: parent
-            visible: fullImageUrl !== ""
-            source: fullImageUrl
-            fillMode: Image.PreserveAspectFit
-            asynchronous: true
+            enabled: fullImageUrl !== ""
+
+            property real zoomScale: 1.0
+            property real minScale: 0.25
+            property real maxScale: 4.0
+
+            onPinchUpdated: {
+                var newScale = pinchArea.zoomScale * pinch.scale
+                pinchArea.zoomScale = Math.max(pinchArea.minScale, Math.min(pinchArea.maxScale, newScale))
+            }
+
+            onPinchFinished: {
+                pinchArea.zoomScale = Math.max(pinchArea.minScale, Math.min(pinchArea.maxScale, pinchArea.zoomScale))
+            }
+
+            Image {
+                id: fullImage
+                anchors.fill: parent
+                source: fullImageUrl
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+
+                transform: Scale {
+                    id: imageScale
+                    origin.x: fullImage.width / 2
+                    origin.y: fullImage.height / 2
+                    xScale: pinchArea.zoomScale
+                    yScale: pinchArea.zoomScale
+                }
+            }
 
             // Background to hide the grid behind it
             Rectangle {
