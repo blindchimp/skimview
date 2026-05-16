@@ -13,6 +13,7 @@ ApplicationWindow {
 
     property string fullImageUrl: ""
     property int gridCurrentIndex: -1
+    property real zoomScale: 1.0
     // Property to receive initial folder from C++ (as QUrl string)
     //property var initialFolder: null
 
@@ -87,7 +88,7 @@ ApplicationWindow {
                     text: "Zoom x2"
                     onClicked: {
                         if (fullImageUrl !== "") {
-                            pinchArea.zoomScale = 2.0
+                            zoomScale = 2.0
                         }
                     }
                 }
@@ -96,7 +97,7 @@ ApplicationWindow {
                     text: "Zoom 1:1"
                     onClicked: {
                         if (fullImageUrl !== "") {
-                            pinchArea.zoomScale = 1.0
+                            zoomScale = 1.0
                         }
                     }
                 }
@@ -105,7 +106,7 @@ ApplicationWindow {
                     text: "Zoom 1/2"
                     onClicked: {
                         if (fullImageUrl !== "") {
-                            pinchArea.zoomScale = 0.5
+                            zoomScale = 0.5
                         }
                     }
                 }
@@ -290,6 +291,7 @@ ApplicationWindow {
             fillMode: Image.PreserveAspectFit
             asynchronous: true
             visible: fullImageUrl !== ""
+            scale: zoomScale
 
         }
 

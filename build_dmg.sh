@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-QT_PATH="$HOME/Qt/6.11.0/macos"
+QT_PATH="$HOME/Qt/6.11.1/macos"
 QT_BIN="$QT_PATH/bin"
 APP_NAME="ImageViewer"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
