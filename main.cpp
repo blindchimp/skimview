@@ -7,6 +7,7 @@
 #include <QUrl>
 #include <QDebug>
 #include "trashhandler.h"
+#include "cliphandler.h"
 
 int main(int argc, char *argv[])
 {
@@ -38,6 +39,10 @@ int main(int argc, char *argv[])
     // Register TrashHandler for use in QML
     TrashHandler trashHandler;
     context->setContextProperty("trashHandler", &trashHandler);
+
+    // Register ClipboardHandler for use in QML
+    ClipboardHandler clipboardHandler;
+    context->setContextProperty("clipboardHandler", &clipboardHandler);
 
     // Pass the initial folder path to QML as a file:// URL
     if(initial_folder)

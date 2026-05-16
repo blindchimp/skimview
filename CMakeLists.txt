@@ -16,6 +16,8 @@ qt_add_executable(ImageViewer
     main.cpp
     trashhandler.h
     trashhandler.cpp
+    cliphandler.h
+    cliphandler.cpp
     icon.icns
 )
 

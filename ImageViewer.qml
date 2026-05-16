@@ -76,11 +76,11 @@ ApplicationWindow {
                 }
 
                 Button {
-                    text: "Copy Name"
+                    text: "Copy Path"
                     visible: gridCurrentIndex >= 0 && gridCurrentIndex < folderModel.count
                     onClicked: {
-                        var filename = folderModel.get(gridCurrentIndex, "fileName")
-                        Qt.application.clipboard = filename
+                        var fileUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+                        clipboardHandler.copyToClipboard(fileUrl)
                     }
                 }
 
