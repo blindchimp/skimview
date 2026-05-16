@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QClipboard>
+#include <QUrl>
 
 class ClipboardHandler : public QObject
 {
@@ -10,6 +11,7 @@ class ClipboardHandler : public QObject
 public:
     explicit ClipboardHandler(QObject *parent = nullptr);
 
+    Q_INVOKABLE void copyToClipboard(const QUrl &url) const;
     Q_INVOKABLE void copyToClipboard(const QString &text) const;
 };
 
