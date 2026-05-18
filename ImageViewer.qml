@@ -207,10 +207,12 @@ ApplicationWindow {
         if (searchFilter.length === 0) {
             folderModel.nameFilters = ["*.png", "*.jpg", "*.jpeg", "*.webp"]
         } else {
-            // Create a filter that matches files containing the search text
-            // FolderListModel supports wildcards with *
-            var pattern = "*" + searchFilter + "*"
-            folderModel.nameFilters = [pattern, "*.png", "*.jpg", "*.jpeg", "*.webp"]
+            folderModel.nameFilters = [
+                "*" + searchFilter + "*.png",
+                "*" + searchFilter + "*.jpg",
+                "*" + searchFilter + "*.jpeg",
+                "*" + searchFilter + "*.webp"
+            ]
         }
     }
 
