@@ -16,6 +16,8 @@ ApplicationWindow {
     property int gridCurrentIndex: -1
     property real zoomScale: 1.0
     property real initialZoomScale: 1.0
+    property real panX: 0
+    property real panY: 0
     // Property to receive initial folder from C++ (as QUrl string)
     //property var initialFolder: null
 
@@ -91,6 +93,8 @@ ApplicationWindow {
                     onClicked: {
                         if (fullImageUrl !== "") {
                             zoomScale = 2.0
+                            panX = 0
+                            panY = 0
                         }
                     }
                 }
@@ -100,6 +104,8 @@ ApplicationWindow {
                     onClicked: {
                         if (fullImageUrl !== "") {
                             zoomScale = 1.0
+                            panX = 0
+                            panY = 0
                         }
                     }
                 }
@@ -109,6 +115,8 @@ ApplicationWindow {
                     onClicked: {
                         if (fullImageUrl !== "") {
                             zoomScale = 0.5
+                            panX = 0
+                            panY = 0
                         }
                     }
                 }
@@ -217,6 +225,14 @@ ApplicationWindow {
         }
     }
 
+    // Clamp pan to valid range based on zoom level
+    function clampPan() {
+        var maxX = Math.max(0, (fullImage.parent.width / 2) * (zoomScale - 1))
+        var maxY = Math.max(0, (fullImage.parent.height / 2) * (zoomScale - 1))
+        panX = Math.max(-maxX, Math.min(maxX, panX))
+        panY = Math.max(-maxY, Math.min(maxY, panY))
+    }
+
     // Parse date/delta-time input into a Date object
     function parseDateTime(input) {
         if (!input || input.trim().length === 0)
@@ -323,6 +339,7 @@ ApplicationWindow {
     Rectangle {
         anchors.fill: parent
         color: "#2b2b2b"
+        clip: true
 
         GridView {
             id: gridView
@@ -421,7 +438,10 @@ ApplicationWindow {
 
         Image {
             id: fullImage
-            anchors.fill: parent
+            x: panX
+            y: panY
+            width: parent.width
+            height: parent.height
             source: fullImageUrl
             fillMode: Image.PreserveAspectFit
             asynchronous: true
@@ -437,6 +457,34 @@ ApplicationWindow {
                 }
                 onScaleChanged: {
                     zoomScale = Math.max(0.1, Math.min(10.0, initialZoomScale * scale))
+                    clampPan()
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                enabled: zoomScale > 1.0
+                cursorShape: !enabled ? Qt.ArrowCursor
+                    : (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor)
+
+                property real startVpX: 0
+                property real startVpY: 0
+                property real startPanX: 0
+                property real startPanY: 0
+
+                onPressed: (mouse) => {
+                    startVpX = mouse.x + panX
+                    startVpY = mouse.y + panY
+                    startPanX = panX
+                    startPanY = panY
+                }
+                onPositionChanged: (mouse) => {
+                    if (!pressed) return
+                    var vpX = mouse.x + panX
+                    var vpY = mouse.y + panY
+                    panX = startPanX + (vpX - startVpX)
+                    panY = startPanY + (vpY - startVpY)
+                    clampPan()
                 }
             }
         }
@@ -521,6 +569,8 @@ ApplicationWindow {
             }
         } else {
             zoomScale = 1.0
+            panX = 0
+            panY = 0
         }
     }
 }
