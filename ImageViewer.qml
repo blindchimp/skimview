@@ -171,6 +171,34 @@ ApplicationWindow {
                     }
                 }
             }
+
+            // Fourth row: Date search
+            RowLayout {
+                Layout.fillWidth: true
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+
+                Label {
+                    text: "Jump to date:"
+                    color: "#aaaaaa"
+                }
+
+                TextField {
+                    id: dateSearchField
+                    Layout.fillWidth: true
+                    placeholderText: "e.g. 2024-01-15, 'one month ago', '2 weeks ago', yesterday, today"
+                    onAccepted: {
+                        scrollToDate(text)
+                    }
+                }
+
+                Button {
+                    text: "Go"
+                    onClicked: {
+                        scrollToDate(dateSearchField.text)
+                    }
+                }
+            }
         }
     }
 
@@ -184,6 +212,109 @@ ApplicationWindow {
             var pattern = "*" + searchFilter + "*"
             folderModel.nameFilters = [pattern, "*.png", "*.jpg", "*.jpeg", "*.webp"]
         }
+    }
+
+    // Parse date/delta-time input into a Date object
+    function parseDateTime(input) {
+        if (!input || input.trim().length === 0)
+            return null
+
+        input = input.trim().toLowerCase()
+
+        // "today"
+        if (input === "today")
+            return new Date()
+
+        // "yesterday"
+        if (input === "yesterday") {
+            var d = new Date()
+            d.setDate(d.getDate() - 1)
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+        }
+
+        // Date format: YYYY-MM-DD or YYYY/MM/DD
+        var dateMatch = input.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/)
+        if (dateMatch)
+            return new Date(parseInt(dateMatch[1]), parseInt(dateMatch[2]) - 1, parseInt(dateMatch[3]))
+
+        // Number words
+        var numberWords = {
+            "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+            "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+            "a": 1, "an": 1
+        }
+
+        // Delta-time: "<number> <unit> ago" or "<word> <unit> ago"
+        var deltaMatch = input.match(/^(?:(\d+)\s*|(\w+)\s+)?(year|month|week|day)s?\s+ago$/)
+        if (!deltaMatch)
+            return null
+
+        var num = deltaMatch[1] ? parseInt(deltaMatch[1]) : (deltaMatch[2] ? (numberWords[deltaMatch[2]] || null) : 1)
+        if (num === null)
+            return null
+
+        var unit = deltaMatch[3]
+        var result = new Date()
+        switch (unit) {
+        case "year":
+            result.setFullYear(result.getFullYear() - num)
+            break
+        case "month":
+            result.setMonth(result.getMonth() - num)
+            break
+        case "week":
+            result.setDate(result.getDate() - num * 7)
+            break
+        case "day":
+            result.setDate(result.getDate() - num)
+            break
+        }
+        return result
+    }
+
+    // Find the index of the file whose modification time is closest to targetDate
+    function findClosestIndex(targetDate) {
+        if (!targetDate || folderModel.count === 0)
+            return -1
+
+        var targetTime = targetDate.getTime()
+        var closestIdx = -1
+        var closestDiff = Infinity
+
+        for (var i = 0; i < folderModel.count; i++) {
+            var fileDate = folderModel.get(i, "fileModified")
+            if (!fileDate)
+                continue
+            var t = fileDate.getTime()
+            if (isNaN(t))
+                continue
+            var diff = Math.abs(t - targetTime)
+            if (diff < closestDiff) {
+                closestDiff = diff
+                closestIdx = i
+            }
+        }
+
+        return closestIdx
+    }
+
+    // Parse input and scroll the grid to the closest matching file
+    function scrollToDate(input) {
+        if (!input || input.trim().length === 0)
+            return
+
+        var targetDate = parseDateTime(input)
+        if (!targetDate) {
+            return
+        }
+
+        var idx = findClosestIndex(targetDate)
+        if (idx < 0)
+            return
+
+        gridCurrentIndex = idx
+        gridView.currentIndex = idx
+        gridView.positionViewAtIndex(idx, GridView.Center)
     }
 
     Rectangle {
