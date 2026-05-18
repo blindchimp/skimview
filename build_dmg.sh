@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# WARNING: vibe coded, 2026
 
 # Build and package script for ImageViewer Qt6 app
 # Usage: ./build_dmg.sh [--sign] [--identity "Developer ID Application: Your Name"] [--notarize]

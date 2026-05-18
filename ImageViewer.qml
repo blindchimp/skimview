@@ -1,3 +1,4 @@
+// WARNING: vibe coded ca. 2026
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
