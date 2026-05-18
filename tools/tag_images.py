@@ -17,6 +17,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import Optional
 
 import pytesseract
 import requests
@@ -35,11 +36,13 @@ TAG_PROMPT = (
 )
 
 
-def get_db(path: Path) -> sqlite3.Connection:
-    db_path = path / "tags.db"
+def get_db(dir_path: Path) -> sqlite3.Connection:
+    db_path = dir_path / "tags.db"
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
-    conn.execute("""
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
+    conn.executescript("""
         CREATE TABLE IF NOT EXISTS images (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             path TEXT UNIQUE NOT NULL,
@@ -50,10 +53,10 @@ def get_db(path: Path) -> sqlite3.Connection:
             model TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        );
+        CREATE INDEX IF NOT EXISTS idx_path ON images(path);
+        CREATE INDEX IF NOT EXISTS idx_hash ON images(file_hash);
     """)
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_path ON images(path)")
-    conn.execute("CREATE INDEX IF NOT EXISTS idx_hash ON images(file_hash)")
     conn.commit()
     return conn
 
@@ -81,7 +84,7 @@ def run_ocr(path: Path) -> str:
         return ""
 
 
-def run_ollama(model: str, prompt: str, image_path: Path) -> dict | None:
+def run_ollama(model: str, prompt: str, image_path: Path) -> Optional[dict]:
     with open(image_path, "rb") as f:
         b64 = base64.b64encode(f.read()).decode("utf-8")
     try:
@@ -109,11 +112,13 @@ def parse_tags(text: str) -> list[str]:
     return [t.lower() for t in parts if t and len(t) < 100]
 
 
-def process_image(path: Path, model: str, conn: sqlite3.Connection) -> dict:
+def process_image(path: Path, model: str, db_dir: Path) -> dict:
+    conn = get_db(db_dir)
     fhash = file_hash(path)
     rel = str(path)
 
     if not needs_update(conn, rel, fhash):
+        conn.close()
         return {"path": rel, "status": "skipped"}
 
     print(f"  OCR: {path.name}", flush=True)
@@ -142,6 +147,7 @@ def process_image(path: Path, model: str, conn: sqlite3.Connection) -> dict:
         (rel, fhash, tags, ocr_text, description, model),
     )
     conn.commit()
+    conn.close()
     return {"path": rel, "status": "tagged", "tags": tags, "ocr_len": len(ocr_text)}
 
 
@@ -203,7 +209,7 @@ def main():
 
     with ThreadPoolExecutor(max_workers=args.max_workers) as pool:
         futures = {
-            pool.submit(process_image, img, args.model, conn): img
+            pool.submit(process_image, img, args.model, args.directory): img
             for img in to_process
         }
         for future in as_completed(futures):
