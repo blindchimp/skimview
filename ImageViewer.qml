@@ -15,6 +15,7 @@ ApplicationWindow {
     property string fullImageUrl: ""
     property int gridCurrentIndex: -1
     property real zoomScale: 1.0
+    property real initialZoomScale: 1.0
     // Property to receive initial folder from C++ (as QUrl string)
     //property var initialFolder: null
 
@@ -427,8 +428,18 @@ ApplicationWindow {
             visible: fullImageUrl !== ""
             scale: zoomScale
 
+            PinchHandler {
+                target: null
+                onActiveChanged: {
+                    if (active) {
+                        initialZoomScale = zoomScale
+                    }
+                }
+                onScaleChanged: {
+                    zoomScale = Math.max(0.1, Math.min(10.0, initialZoomScale * scale))
+                }
+            }
         }
-
 
 
 
@@ -508,6 +519,8 @@ ApplicationWindow {
                     break
                 }
             }
+        } else {
+            zoomScale = 1.0
         }
     }
 }
