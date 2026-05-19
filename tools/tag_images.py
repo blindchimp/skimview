@@ -11,8 +11,12 @@ Usage:
 import argparse
 import base64
 import hashlib
+import os
 import json
+import platform
+import shutil
 import sqlite3
+import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -29,11 +33,66 @@ SUPPORTED_EXTENSIONS = frozenset({
     ".webp", ".heic", ".heif", ".avif",
 })
 MAX_WORKERS = 4
+OLLAMA_CHECK_RETRIES = 15
+OLLAMA_RETRY_DELAY = 2
 TAG_PROMPT = (
     "List 5-15 concise, comma-separated tags describing this image's content "
     "(objects, scenes, people, colors, style). "
     "Reply with only the tags, nothing else."
 )
+
+
+def _find_ollama() -> Optional[str]:
+    """Locate the ollama binary."""
+    path = shutil.which("ollama")
+    if path:
+        return path
+    for candidate in [
+        "/usr/local/bin/ollama",
+        "/opt/homebrew/bin/ollama",
+        os.path.expanduser("~/bin/ollama"),
+    ]:
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def ensure_ollama() -> bool:
+    """Check if Ollama is running; try to start it if not."""
+    def is_alive() -> bool:
+        try:
+            resp = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=3)
+            return resp.ok
+        except requests.RequestException:
+            return False
+
+    if is_alive():
+        return True
+
+    print("Ollama is not running. Starting it...", file=sys.stderr)
+
+    ollama_bin = _find_ollama()
+    if not ollama_bin:
+        print("Error: could not find 'ollama' binary in PATH or standard locations.",
+              file=sys.stderr)
+        return False
+
+    subprocess.Popen(
+        [ollama_bin, "serve"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+
+    for i in range(OLLAMA_CHECK_RETRIES):
+        time.sleep(OLLAMA_RETRY_DELAY)
+        if is_alive():
+            print("Ollama is ready.", file=sys.stderr)
+            return True
+        print(f"  Waiting for Ollama... ({i + 1}/{OLLAMA_CHECK_RETRIES})",
+              file=sys.stderr)
+
+    print("Error: Ollama did not start. See https://ollama.ai",
+          file=sys.stderr)
+    return False
 
 
 def get_db(dir_path: Path) -> sqlite3.Connection:
@@ -203,6 +262,10 @@ def main():
 
     print(f"Found {len(images)} images, {len(to_process)} to process "
           f"(model: {args.model})")
+
+    if to_process and not ensure_ollama():
+        print("Cannot proceed without Ollama.", file=sys.stderr)
+        sys.exit(1)
 
     start = time.time()
     tagged = skipped = errors = 0

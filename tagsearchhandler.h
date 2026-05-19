@@ -13,6 +13,8 @@ public:
 
     Q_INVOKABLE QStringList search(const QString &folderUrl, const QString &query) const;
     Q_INVOKABLE QVariantMap getImageInfo(const QString &imageUrl) const;
+    Q_INVOKABLE bool hasTagsDb(const QString &folderUrl) const;
+    Q_INVOKABLE bool deleteTagsDb(const QString &folderUrl) const;
 };
 
 #endif // TAGSEARCHHANDLER_H

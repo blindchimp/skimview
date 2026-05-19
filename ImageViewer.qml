@@ -38,6 +38,7 @@ ApplicationWindow {
         showDirs: false
         sortField: currentSortField
         sortReversed: !sortAscending
+        onFolderChanged: checkTagsDb()
     }
 
     // Set initial folder when component is completed
@@ -45,6 +46,7 @@ ApplicationWindow {
         if (initialFolder !== "") {
             folderModel.folder = initialFolder
         }
+        checkTagsDb()
     }
 
     // Properties for sort control
@@ -61,6 +63,9 @@ ApplicationWindow {
     property string ocrText: ""
     property string tags: ""
     property bool showOcrPanel: false
+
+    // Whether tags.db exists in the current folder
+    property bool hasTagsDb: false
 
     header: ToolBar {
         background: Rectangle { color: "#1f1f1f" }
@@ -93,6 +98,17 @@ ApplicationWindow {
                     onClicked: {
                         var fileUrl = folderModel.get(gridCurrentIndex, "fileUrl")
                         clipboardHandler.copyToClipboard(fileUrl)
+                    }
+                }
+
+                Button {
+                    text: "Reset DB"
+                    visible: hasTagsDb
+                    onClicked: {
+                        tagSearchHandler.deleteTagsDb(folderModel.folder)
+                        ocrText = ""
+                        tags = ""
+                        checkTagsDb()
                     }
                 }
 
@@ -235,7 +251,53 @@ ApplicationWindow {
                     }
                 }
             }
+
+            // Fifth row: Tag images button (shown when no tags.db exists)
+            RowLayout {
+                id: tagDbRow
+                visible: !hasTagsDb || (taggingHandler && taggingHandler.running)
+                Layout.fillWidth: true
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+
+                Button {
+                    id: tagDbButton
+                    text: taggingHandler && taggingHandler.running ? "Cancel" : "Tag Images in Folder"
+                    onClicked: {
+                        if (taggingHandler && taggingHandler.running)
+                            taggingHandler.cancel()
+                        else if (taggingHandler)
+                            taggingHandler.start(folderModel.folder)
+                    }
+                    background: Rectangle {
+                        color: taggingHandler && taggingHandler.running ? "#cc3333" : "#338833"
+                        radius: 4
+                    }
+                }
+
+                Label {
+                    text: {
+                        if (taggingHandler && taggingHandler.running) return "Running OCR + AI tagging..."
+                        if (taggingHandler && taggingHandler.errorMessage !== "") return "Error: " + taggingHandler.errorMessage
+                        return ""
+                    }
+                    color: taggingHandler && taggingHandler.running ? "#aaaaaa" : "#ff6666"
+                    wrapMode: Text.WordWrap
+                    Layout.fillWidth: true
+                }
+            }
         }
+    }
+
+    // Re-check tags.db when tagging finishes
+    Connections {
+        target: taggingHandler
+        function onFinished(success) { checkTagsDb() }
+    }
+
+    // Check if tags.db exists in the current folder
+    function checkTagsDb() {
+        hasTagsDb = tagSearchHandler ? tagSearchHandler.hasTagsDb(folderModel.folder) : false
     }
 
     // Function to update folder model filters

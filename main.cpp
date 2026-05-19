@@ -6,13 +6,16 @@
 #include <QStringList>
 #include <QUrl>
 #include <QDebug>
+#include <QQuickStyle>
 #include "trashhandler.h"
 #include "cliphandler.h"
 #include "tagsearchhandler.h"
+#include "tagginghandler.h"
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+    QQuickStyle::setStyle("Fusion");
 
     bool initial_folder = false;
     const char *path = 0;
@@ -48,6 +51,10 @@ int main(int argc, char *argv[])
     // Register TagSearchHandler for use in QML
     TagSearchHandler tagSearchHandler;
     context->setContextProperty("tagSearchHandler", &tagSearchHandler);
+
+    // Register TaggingHandler for use in QML
+    TaggingHandler taggingHandler;
+    context->setContextProperty("taggingHandler", &taggingHandler);
 
     // Pass the initial folder path to QML as a file:// URL
     if(initial_folder)

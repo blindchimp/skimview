@@ -20,6 +20,8 @@ qt_add_executable(ImageViewer
     cliphandler.cpp
     tagsearchhandler.h
     tagsearchhandler.cpp
+    tagginghandler.h
+    tagginghandler.cpp
     icon.icns
 )
 
@@ -44,6 +46,10 @@ qt_add_qml_module(ImageViewer
     VERSION 1.0
     QML_FILES
         ImageViewer.qml
+)
+
+target_compile_definitions(ImageViewer PRIVATE
+    TOOLS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tools"
 )
 
 target_link_libraries(ImageViewer PRIVATE

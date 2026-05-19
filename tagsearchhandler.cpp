@@ -7,6 +7,13 @@
 #include <QUrl>
 #include <QVariantMap>
 
+static QString toLocalPath(const QString &url)
+{
+    if (url.startsWith("file://"))
+        return QUrl(url).toLocalFile();
+    return url;
+}
+
 TagSearchHandler::TagSearchHandler(QObject *parent)
     : QObject(parent)
 {
@@ -60,6 +67,23 @@ QStringList TagSearchHandler::search(const QString &folderUrl, const QString &qu
     QSqlDatabase::removeDatabase(connName);
 
     return results;
+}
+
+bool TagSearchHandler::hasTagsDb(const QString &folderUrl) const
+{
+    QString path = toLocalPath(folderUrl);
+    return QFile::exists(path + "/tags.db");
+}
+
+bool TagSearchHandler::deleteTagsDb(const QString &folderUrl) const
+{
+    QString path = toLocalPath(folderUrl);
+    if (!QFile::exists(path + "/tags.db"))
+        return false;
+    bool ok = QFile::remove(path + "/tags.db");
+    QFile::remove(path + "/tags.db-wal");
+    QFile::remove(path + "/tags.db-shm");
+    return ok;
 }
 
 QVariantMap TagSearchHandler::getImageInfo(const QString &imageUrl) const
