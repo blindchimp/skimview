@@ -109,6 +109,7 @@ ApplicationWindow {
                         ocrText = ""
                         tags = ""
                         checkTagsDb()
+                        gridView.forceActiveFocus()
                     }
                 }
 
