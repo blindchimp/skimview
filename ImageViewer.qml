@@ -275,7 +275,7 @@ ApplicationWindow {
                     text: {
                         if (taggingHandler && taggingHandler.running) return "Running OCR + AI tagging..."
                         if (taggingHandler && taggingHandler.errorMessage !== "") return "Error: " + taggingHandler.errorMessage
-                        return ""
+                        return "Generate AI tags and OCR for all images in this folder"
                     }
                     color: taggingHandler && taggingHandler.running ? "#aaaaaa" : "#ff6666"
                     wrapMode: Text.WordWrap
@@ -666,14 +666,12 @@ ApplicationWindow {
     // Global shortcuts
     Shortcut {
         sequence: "Escape"
-        context: Qt.ApplicationShortcut
         onActivated: fullImageUrl = ""
     }
 
     // Keyboard navigation in thumbnail grid
     Shortcut {
         sequence: "Left"
-        context: Qt.ApplicationShortcut
         enabled: fullImageUrl === "" && folderModel.count > 0
         onActivated: {
             gridCurrentIndex = (gridCurrentIndex - 1 + folderModel.count) % folderModel.count
@@ -684,7 +682,6 @@ ApplicationWindow {
 
     Shortcut {
         sequence: "Right"
-        context: Qt.ApplicationShortcut
         enabled: fullImageUrl === "" && folderModel.count > 0
         onActivated: {
             gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
@@ -696,7 +693,6 @@ ApplicationWindow {
     // Keyboard navigation in full image view
     Shortcut {
         sequence: "Left"
-        context: Qt.ApplicationShortcut
         enabled: fullImageUrl !== "" && folderModel.count > 0
         onActivated: {
             gridCurrentIndex = (gridCurrentIndex - 1 + folderModel.count) % folderModel.count
@@ -706,7 +702,6 @@ ApplicationWindow {
 
     Shortcut {
         sequence: "Right"
-        context: Qt.ApplicationShortcut
         enabled: fullImageUrl !== "" && folderModel.count > 0
         onActivated: {
             gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
@@ -717,7 +712,6 @@ ApplicationWindow {
     // Trash shortcut - press 'd' to move image to trash and load next image
     Shortcut {
         sequence: "d"
-        context: Qt.ApplicationShortcut
         enabled: fullImageUrl !== ""
         onActivated: {
             trashHandler.moveToTrash(fullImageUrl)
