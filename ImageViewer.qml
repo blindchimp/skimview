@@ -545,23 +545,22 @@ ApplicationWindow {
         }
 
         // OCR text panel (shown instead of image when toggled)
-        Flickable {
+        ScrollView {
             id: ocrPanel
             visible: fullImageUrl !== "" && showOcrPanel
             anchors.fill: parent
             anchors.bottomMargin: 36
             anchors.topMargin: 4
             clip: true
-            contentWidth: parent.width
-            contentHeight: ocrLabel.height + 20
-            Label {
-                id: ocrLabel
+            TextArea {
                 text: ocrText
                 color: "white"
                 wrapMode: Text.WordWrap
-                width: parent.width - 20
-                padding: 10
+                readOnly: true
+                selectByMouse: true
                 font.pixelSize: 14
+                padding: 10
+                background: null
             }
         }
 
