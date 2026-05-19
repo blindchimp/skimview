@@ -269,10 +269,6 @@ ApplicationWindow {
                         else if (taggingHandler)
                             taggingHandler.start(folderModel.folder)
                     }
-                    background: Rectangle {
-                        color: taggingHandler && taggingHandler.running ? "#cc3333" : "#338833"
-                        radius: 4
-                    }
                 }
 
                 Label {
@@ -670,12 +666,14 @@ ApplicationWindow {
     // Global shortcuts
     Shortcut {
         sequence: "Escape"
+        context: Qt.ApplicationShortcut
         onActivated: fullImageUrl = ""
     }
 
     // Keyboard navigation in thumbnail grid
     Shortcut {
         sequence: "Left"
+        context: Qt.ApplicationShortcut
         enabled: fullImageUrl === "" && folderModel.count > 0
         onActivated: {
             gridCurrentIndex = (gridCurrentIndex - 1 + folderModel.count) % folderModel.count
@@ -686,6 +684,7 @@ ApplicationWindow {
 
     Shortcut {
         sequence: "Right"
+        context: Qt.ApplicationShortcut
         enabled: fullImageUrl === "" && folderModel.count > 0
         onActivated: {
             gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
@@ -697,6 +696,7 @@ ApplicationWindow {
     // Keyboard navigation in full image view
     Shortcut {
         sequence: "Left"
+        context: Qt.ApplicationShortcut
         enabled: fullImageUrl !== "" && folderModel.count > 0
         onActivated: {
             gridCurrentIndex = (gridCurrentIndex - 1 + folderModel.count) % folderModel.count
@@ -706,6 +706,7 @@ ApplicationWindow {
 
     Shortcut {
         sequence: "Right"
+        context: Qt.ApplicationShortcut
         enabled: fullImageUrl !== "" && folderModel.count > 0
         onActivated: {
             gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
@@ -716,6 +717,7 @@ ApplicationWindow {
     // Trash shortcut - press 'd' to move image to trash and load next image
     Shortcut {
         sequence: "d"
+        context: Qt.ApplicationShortcut
         enabled: fullImageUrl !== ""
         onActivated: {
             trashHandler.moveToTrash(fullImageUrl)

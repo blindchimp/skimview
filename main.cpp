@@ -6,7 +6,6 @@
 #include <QStringList>
 #include <QUrl>
 #include <QDebug>
-#include <QQuickStyle>
 #include "trashhandler.h"
 #include "cliphandler.h"
 #include "tagsearchhandler.h"
@@ -15,7 +14,6 @@
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    QQuickStyle::setStyle("Fusion");
 
     bool initial_folder = false;
     const char *path = 0;
