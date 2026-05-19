@@ -5,6 +5,7 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QUrl>
+#include <QVariantMap>
 
 TagSearchHandler::TagSearchHandler(QObject *parent)
     : QObject(parent)
@@ -59,4 +60,48 @@ QStringList TagSearchHandler::search(const QString &folderUrl, const QString &qu
     QSqlDatabase::removeDatabase(connName);
 
     return results;
+}
+
+QVariantMap TagSearchHandler::getImageInfo(const QString &imageUrl) const
+{
+    QVariantMap info;
+    info["ocr_text"] = "";
+    info["tags"] = "";
+
+    if (imageUrl.isEmpty())
+        return info;
+
+    QString imagePath = imageUrl;
+    if (imagePath.startsWith("file://"))
+        imagePath = QUrl(imagePath).toLocalFile();
+
+    QFileInfo fi(imagePath);
+    QString dbPath = fi.dir().path() + "/tags.db";
+
+    if (!QFile::exists(dbPath))
+        return info;
+
+    QString connName = QString("tagSearch_info_%1").arg(reinterpret_cast<quintptr>(this));
+
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connName);
+        db.setDatabaseName(dbPath);
+
+        if (db.open())
+        {
+            QSqlQuery q(db);
+            q.prepare("SELECT ocr_text, tags FROM images WHERE path = ?");
+            q.addBindValue(imagePath);
+
+            if (q.exec() && q.next())
+            {
+                info["ocr_text"] = q.value(0).toString();
+                info["tags"] = q.value(1).toString();
+            }
+        }
+    }
+
+    QSqlDatabase::removeDatabase(connName);
+
+    return info;
 }

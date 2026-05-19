@@ -57,6 +57,11 @@ ApplicationWindow {
     // Property for tag search mode
     property bool tagSearchMode: false
 
+    // Properties for OCR text and tags display
+    property string ocrText: ""
+    property string tags: ""
+    property bool showOcrPanel: false
+
     header: ToolBar {
         background: Rectangle { color: "#1f1f1f" }
         ColumnLayout {
@@ -258,6 +263,21 @@ ApplicationWindow {
             folderModel.nameFilters = results
         else
             folderModel.nameFilters = ["__no_match__"]
+    }
+
+    // Load OCR text and tags for the current image from tags.db
+    function loadImageInfo(imageUrl) {
+        if (imageUrl === "") {
+            ocrText = ""
+            tags = ""
+            showOcrPanel = false
+            return
+        }
+        if (tagSearchHandler) {
+            var info = tagSearchHandler.getImageInfo(imageUrl)
+            ocrText = info.ocr_text || ""
+            tags = info.tags || ""
+        }
     }
 
     // Clamp pan to valid range based on zoom level
@@ -480,7 +500,7 @@ ApplicationWindow {
             source: fullImageUrl
             fillMode: Image.PreserveAspectFit
             asynchronous: true
-            visible: fullImageUrl !== ""
+            visible: fullImageUrl !== "" && !showOcrPanel
             scale: zoomScale
 
             PinchHandler {
@@ -524,6 +544,57 @@ ApplicationWindow {
             }
         }
 
+        // OCR text panel (shown instead of image when toggled)
+        Flickable {
+            id: ocrPanel
+            visible: fullImageUrl !== "" && showOcrPanel
+            anchors.fill: parent
+            anchors.bottomMargin: 36
+            anchors.topMargin: 4
+            clip: true
+            contentWidth: parent.width
+            contentHeight: ocrLabel.height + 20
+            Label {
+                id: ocrLabel
+                text: ocrText
+                color: "white"
+                wrapMode: Text.WordWrap
+                width: parent.width - 20
+                padding: 10
+                font.pixelSize: 14
+            }
+        }
+
+        // OCR toggle button
+        Button {
+            id: ocrButton
+            visible: fullImageUrl !== "" && ocrText.length > 20
+            text: showOcrPanel ? "Hide OCR" : "Show OCR"
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 10
+            z: 10
+            onClicked: showOcrPanel = !showOcrPanel
+        }
+
+        // Tags bar at bottom of full image view
+        Rectangle {
+            id: tagsBar
+            visible: fullImageUrl !== ""
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 30
+            color: "#1f1f1f"
+            Label {
+                anchors.fill: parent
+                anchors.margins: 5
+                text: tags.length > 0 ? "Tags: " + tags : "(no tags)"
+                color: "#aaaaaa"
+                elide: Text.ElideRight
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
 
 
         Text {
@@ -595,6 +666,7 @@ ApplicationWindow {
 
     // Update gridCurrentIndex when opening a different image
     onFullImageUrlChanged: {
+        loadImageInfo(fullImageUrl)
         if (fullImageUrl !== "") {
             for (var i = 0; i < folderModel.count; i++) {
                 if (folderModel.get(i, "fileUrl") === fullImageUrl) {
