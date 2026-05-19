@@ -272,15 +272,71 @@ ApplicationWindow {
                     }
                 }
 
-                Label {
-                    text: {
-                        if (taggingHandler && taggingHandler.running) return "Running OCR + AI tagging..."
-                        if (taggingHandler && taggingHandler.errorMessage !== "") return "Error: " + taggingHandler.errorMessage
-                        return "Generate AI tags and OCR for all images in this folder"
-                    }
-                    color: taggingHandler && taggingHandler.running ? "#aaaaaa" : "#ff6666"
-                    wrapMode: Text.WordWrap
+                ColumnLayout {
                     Layout.fillWidth: true
+                    spacing: 2
+
+                    Label {
+                        text: {
+                            if (taggingHandler && taggingHandler.running) return ""
+                            if (taggingHandler && taggingHandler.errorMessage !== "") return "Error: " + taggingHandler.errorMessage
+                            return "Generate AI tags and OCR for all images in this folder"
+                        }
+                        color: taggingHandler && taggingHandler.running ? "#aaaaaa" : "#ff6666"
+                        wrapMode: Text.WordWrap
+                        visible: text.length > 0
+                        Layout.fillWidth: true
+                    }
+
+                    RowLayout {
+                        visible: taggingHandler && taggingHandler.running && taggingHandler.ocrTotal > 0
+                        spacing: 6
+                        Layout.fillWidth: true
+
+                        Label {
+                            text: "OCR:"
+                            color: "#cccccc"
+                        }
+
+                        Label {
+                            text: (taggingHandler ? taggingHandler.ocrCompleted : 0) + "/" + (taggingHandler ? taggingHandler.ocrTotal : 0)
+                            color: "#aaaaaa"
+                            font.bold: true
+                        }
+
+                        ProgressBar {
+                            from: 0
+                            to: taggingHandler ? taggingHandler.ocrTotal : 1
+                            value: taggingHandler ? taggingHandler.ocrCompleted : 0
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 12
+                        }
+                    }
+
+                    RowLayout {
+                        visible: taggingHandler && taggingHandler.running && taggingHandler.tagTotal > 0
+                        spacing: 6
+                        Layout.fillWidth: true
+
+                        Label {
+                            text: "Tag:"
+                            color: "#cccccc"
+                        }
+
+                        Label {
+                            text: (taggingHandler ? taggingHandler.tagCompleted : 0) + "/" + (taggingHandler ? taggingHandler.tagTotal : 0)
+                            color: "#aaaaaa"
+                            font.bold: true
+                        }
+
+                        ProgressBar {
+                            from: 0
+                            to: taggingHandler ? taggingHandler.tagTotal : 1
+                            value: taggingHandler ? taggingHandler.tagCompleted : 0
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 12
+                        }
+                    }
                 }
             }
         }

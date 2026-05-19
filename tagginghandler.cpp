@@ -4,6 +4,8 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QUrl>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QDebug>
 
 TaggingHandler::TaggingHandler(QObject *parent)
@@ -51,16 +53,30 @@ void TaggingHandler::start(const QString &folderUrl)
         m_process = nullptr;
     }
 
+    m_ocrCompleted = 0;
+    m_ocrTotal = 0;
+    m_tagCompleted = 0;
+    m_tagTotal = 0;
+    m_readBuffer.clear();
+    emit progressChanged();
+
     m_process = new QProcess(this);
+    connect(m_process, &QProcess::readyReadStandardOutput,
+            this, &TaggingHandler::onReadyReadStdout);
     connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, &TaggingHandler::onProcessFinished);
     connect(m_process, &QProcess::errorOccurred,
             this, &TaggingHandler::onErrorOccurred);
 
     m_process->setProcessChannelMode(QProcess::MergedChannels);
-    m_process->start("python3", {script, "--recursive", folderPath});
+    m_process->start("python3", {script, folderPath});
     emit runningChanged();
 }
+
+int TaggingHandler::ocrCompleted() const { return m_ocrCompleted; }
+int TaggingHandler::ocrTotal() const { return m_ocrTotal; }
+int TaggingHandler::tagCompleted() const { return m_tagCompleted; }
+int TaggingHandler::tagTotal() const { return m_tagTotal; }
 
 void TaggingHandler::cancel()
 {
@@ -73,6 +89,13 @@ void TaggingHandler::cancel()
     m_process->waitForFinished(2000);
     m_process->deleteLater();
     m_process = nullptr;
+
+    m_ocrCompleted = 0;
+    m_ocrTotal = 0;
+    m_tagCompleted = 0;
+    m_tagTotal = 0;
+    m_readBuffer.clear();
+    emit progressChanged();
 
     m_errorMessage = "Tagging cancelled.";
     emit errorMessageChanged();
@@ -90,8 +113,54 @@ QString TaggingHandler::errorMessage() const
     return m_errorMessage;
 }
 
+void TaggingHandler::onReadyReadStdout()
+{
+    if (!m_process)
+        return;
+
+    m_readBuffer.append(m_process->readAllStandardOutput());
+
+    while (true)
+    {
+        int idx = m_readBuffer.indexOf('\n');
+        if (idx < 0)
+            break;
+
+        QByteArray line = m_readBuffer.left(idx).trimmed();
+        m_readBuffer.remove(0, idx + 1);
+
+        if (!line.isEmpty())
+            parseProgressLine(line);
+    }
+}
+
+void TaggingHandler::parseProgressLine(const QByteArray &line)
+{
+    if (!line.startsWith('{'))
+        return;
+
+    QJsonParseError err;
+    QJsonDocument doc = QJsonDocument::fromJson(line, &err);
+    if (err.error || !doc.isObject())
+        return;
+
+    QJsonObject obj = doc.object();
+    if (obj.value("type").toString() != "progress")
+        return;
+
+    m_ocrCompleted = obj.value("ocr").toInt();
+    m_ocrTotal = obj.value("total").toInt();
+    m_tagCompleted = obj.value("tag").toInt();
+    m_tagTotal = obj.value("total").toInt();
+    emit progressChanged();
+}
+
 void TaggingHandler::onProcessFinished(int exitCode, QProcess::ExitStatus status)
 {
+    // Drain any remaining buffered output
+    if (m_process && m_process->bytesAvailable() > 0)
+        onReadyReadStdout();
+
     QString output = m_process ? m_process->readAll().trimmed() : QString();
 
     // Capture output to /tmp/tag.out for debugging (always)

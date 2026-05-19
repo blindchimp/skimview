@@ -5,7 +5,7 @@ Scans a directory for images, runs OCR + vision model tagging,
 and stores results in a local tags.db SQLite database.
 
 Usage:
-    python tools/tag_images.py ~/Pictures [--recursive] [--model llava]
+    python tools/tag_images.py ~/Pictures [--model llava]
 """
 
 import argparse
@@ -18,6 +18,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -33,6 +34,33 @@ SUPPORTED_EXTENSIONS = frozenset({
     ".webp", ".heic", ".heif", ".avif",
 })
 MAX_WORKERS = 4
+
+
+class ProgressTracker:
+    def __init__(self, total: int):
+        self.total = total
+        self.ocr_count = 0
+        self.tag_count = 0
+        self._lock = threading.Lock()
+
+    def ocr_done(self):
+        with self._lock:
+            self.ocr_count += 1
+            self._emit()
+
+    def tag_done(self):
+        with self._lock:
+            self.tag_count += 1
+            self._emit()
+
+    def _emit(self):
+        print(json.dumps({
+            "type": "progress",
+            "ocr": self.ocr_count,
+            "tag": self.tag_count,
+            "total": self.total,
+        }), flush=True)
+
 OLLAMA_CHECK_RETRIES = 15
 OLLAMA_RETRY_DELAY = 2
 TAG_PROMPT = (
@@ -171,20 +199,24 @@ def parse_tags(text: str) -> list[str]:
     return [t.lower() for t in parts if t and len(t) < 100]
 
 
-def process_image(path: Path, model: str, db_dir: Path) -> dict:
+def process_image(path: Path, model: str, db_dir: Path, tracker: ProgressTracker) -> dict:
     conn = get_db(db_dir)
     fhash = file_hash(path)
     rel = str(path)
 
     if not needs_update(conn, rel, fhash):
         conn.close()
+        tracker.ocr_done()
+        tracker.tag_done()
         return {"path": rel, "status": "skipped"}
 
     print(f"  OCR: {path.name}", flush=True)
     ocr_text = run_ocr(path)
+    tracker.ocr_done()
 
     print(f"  Tag: {path.name}", flush=True)
     result = run_ollama(model, TAG_PROMPT, path)
+    tracker.tag_done()
     tags = ""
     description = ""
     if result and "response" in result:
@@ -210,12 +242,7 @@ def process_image(path: Path, model: str, db_dir: Path) -> dict:
     return {"path": rel, "status": "tagged", "tags": tags, "ocr_len": len(ocr_text)}
 
 
-def collect_images(root: Path, recursive: bool) -> list[Path]:
-    if recursive:
-        return [
-            p for p in root.rglob("*")
-            if p.suffix.lower() in SUPPORTED_EXTENSIONS
-        ]
+def collect_images(root: Path) -> list[Path]:
     return [
         p for p in root.iterdir()
         if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
@@ -227,8 +254,6 @@ def main():
         description="Tag images using Ollama vision models + Tesseract OCR"
     )
     parser.add_argument("directory", type=Path, help="Directory of images")
-    parser.add_argument("--recursive", "-r", action="store_true",
-                        help="Scan subdirectories recursively")
     parser.add_argument("--model", default="llava",
                         help="Ollama vision model (default: llava)")
     parser.add_argument("--max-workers", type=int, default=MAX_WORKERS,
@@ -241,7 +266,7 @@ def main():
         print(f"Error: {args.directory} is not a directory", file=sys.stderr)
         sys.exit(1)
 
-    images = collect_images(args.directory, args.recursive)
+    images = collect_images(args.directory)
     if not images:
         print("No supported images found.")
         return
@@ -260,19 +285,21 @@ def main():
         conn.close()
         return
 
-    print(f"Found {len(images)} images, {len(to_process)} to process "
+    total_to_process = len(to_process)
+    print(f"Found {len(images)} images, {total_to_process} to process "
           f"(model: {args.model})")
 
     if to_process and not ensure_ollama():
         print("Cannot proceed without Ollama.", file=sys.stderr)
         sys.exit(1)
 
+    tracker = ProgressTracker(total_to_process)
     start = time.time()
     tagged = skipped = errors = 0
 
     with ThreadPoolExecutor(max_workers=args.max_workers) as pool:
         futures = {
-            pool.submit(process_image, img, args.model, args.directory): img
+            pool.submit(process_image, img, args.model, args.directory, tracker): img
             for img in to_process
         }
         for future in as_completed(futures):
