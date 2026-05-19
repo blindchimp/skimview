@@ -54,6 +54,9 @@ ApplicationWindow {
     // Property for search filter
     property string searchFilter: ""
 
+    // Property for tag search mode
+    property bool tagSearchMode: false
+
     header: ToolBar {
         background: Rectangle { color: "#1f1f1f" }
         ColumnLayout {
@@ -169,6 +172,22 @@ ApplicationWindow {
                     onClicked: sortAscending = !sortAscending
                 }
 
+                // Toggle between filename and tag search
+                Button {
+                    text: tagSearchMode ? "Tags" : "Name"
+                    checkable: true
+                    checked: tagSearchMode
+                    onClicked: {
+                        tagSearchMode = !tagSearchMode
+                        searchField.placeholderText = tagSearchMode ? "Search tags..." : "Search filename..."
+                        searchFilter = searchField.text
+                        if (tagSearchMode)
+                            doTagSearch(searchField.text)
+                        else
+                            updateFilters()
+                    }
+                }
+
                 // Search filter
                 TextField {
                     id: searchField
@@ -176,7 +195,10 @@ ApplicationWindow {
                     placeholderText: "Search filename..."
                     onTextEdited: {
                         searchFilter = text
-                        updateFilters()
+                        if (tagSearchMode)
+                            doTagSearch(text)
+                        else
+                            updateFilters()
                     }
                 }
             }
@@ -223,6 +245,19 @@ ApplicationWindow {
                 "*" + searchFilter + "*.webp"
             ]
         }
+    }
+
+    // Search by tags/OCR/description via SQLite tags.db
+    function doTagSearch(query) {
+        if (query.length === 0) {
+            folderModel.nameFilters = ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+            return
+        }
+        var results = tagSearchHandler.search(folderModel.folder, query)
+        if (results.length > 0)
+            folderModel.nameFilters = results
+        else
+            folderModel.nameFilters = ["__no_match__"]
     }
 
     // Clamp pan to valid range based on zoom level

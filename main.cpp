@@ -8,6 +8,7 @@
 #include <QDebug>
 #include "trashhandler.h"
 #include "cliphandler.h"
+#include "tagsearchhandler.h"
 
 int main(int argc, char *argv[])
 {
@@ -43,6 +44,10 @@ int main(int argc, char *argv[])
     // Register ClipboardHandler for use in QML
     ClipboardHandler clipboardHandler;
     context->setContextProperty("clipboardHandler", &clipboardHandler);
+
+    // Register TagSearchHandler for use in QML
+    TagSearchHandler tagSearchHandler;
+    context->setContextProperty("tagSearchHandler", &tagSearchHandler);
 
     // Pass the initial folder path to QML as a file:// URL
     if(initial_folder)
