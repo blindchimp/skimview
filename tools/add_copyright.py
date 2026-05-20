@@ -7,25 +7,15 @@ import shutil
 import re
 
 COMMENT_STYLES = {
-    # hash-style: .py, .rb, .sh, .yaml, .yml, .cmake, .txt, .env, .dockerfile, .ini, .cfg
-    'hash': ('# ', '# '),
-    # slash-style: .js, .ts, .jsx, .tsx, .css, .scss, .less, .java, .c, .cpp, .h,
-    #             .hpp, .cs, .swift, .go, .rs, .qml, .kt, .kts, .dart, .groovy
-    'slash': ('// ', '// '),
-    # html-style: .html, .htm, .xml, .svg, .xhtml
-    'html': ('<!-- ', ' -->'),
-    # lua-style: .lua
-    'lua': ('-- ', '-- '),
-    # haskell-style: .hs
-    'haskell': ('-- ', '-- '),
-    # fortran-style: .f, .f90, .f95
-    'fortran': ('! ', '! '),
-    # percent-style: .tex
-    'tex': ('% ', '% '),
-    # semicolon-style: .asm
-    'asm': ('; ', '; '),
-    # no comments (plain text prepend)
-    'plain': ('', ''),
+    'hash': '# ',
+    'slash': '// ',
+    'html': '<!-- ',
+    'lua': '-- ',
+    'haskell': '-- ',
+    'fortran': '! ',
+    'tex': '% ',
+    'asm': '; ',
+    'plain': '',
 }
 
 EXTENSION_MAP = {
@@ -96,16 +86,13 @@ def read_copyright(path='cr.txt'):
         return f.read()
 
 def copyright_block(text, style):
-    prefix, suffix = COMMENT_STYLES[style]
+    prefix = COMMENT_STYLES[style]
     lines = text.strip().splitlines()
     commented = []
     for line in lines:
         stripped = line.strip()
         if not stripped:
             commented.append(prefix.rstrip())
-        elif suffix:
-            # suffix after content
-            commented.append(f"{prefix}{stripped}{suffix}")
         else:
             commented.append(f"{prefix}{stripped}")
     return '\n'.join(commented) + '\n'
