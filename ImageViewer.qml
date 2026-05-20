@@ -72,6 +72,8 @@ ApplicationWindow {
 
     // Whether tags.db exists in the current folder
     property bool hasTagsDb: false
+    // Whether tags.db exists but is missing entries for some images
+    property bool needsTagUpdate: false
 
     header: ToolBar {
         background: Rectangle { color: "#1f1f1f" }
@@ -259,10 +261,10 @@ ApplicationWindow {
                 }
             }
 
-            // Fifth row: Tag images button (shown when no tags.db exists)
+            // Fifth row: Tag images button (shown when no tags.db exists, or it is stale)
             RowLayout {
                 id: tagDbRow
-                visible: !hasTagsDb || (taggingHandler && taggingHandler.running)
+                visible: !hasTagsDb || needsTagUpdate || (taggingHandler && taggingHandler.running)
                 Layout.fillWidth: true
                 anchors.leftMargin: 10
                 anchors.rightMargin: 10
@@ -354,9 +356,15 @@ ApplicationWindow {
         function onFinished(success) { checkTagsDb() }
     }
 
-    // Check if tags.db exists in the current folder
+    // Check if tags.db exists and whether it's up-to-date
     function checkTagsDb() {
         hasTagsDb = tagSearchHandler ? tagSearchHandler.hasTagsDb(folderModel.folder) : false
+        if (hasTagsDb) {
+            var count = tagSearchHandler ? tagSearchHandler.tagCount(folderModel.folder) : 0
+            needsTagUpdate = count < folderModel.count
+        } else {
+            needsTagUpdate = false
+        }
     }
 
     // Function to update folder model filters

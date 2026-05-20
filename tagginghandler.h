@@ -46,6 +46,7 @@ private slots:
 
 private:
     void parseProgressLine(const QByteArray &line);
+    void killProcessGroup();
     QString findScript() const;
     QString parseDependencyHint(const QString &output) const;
 

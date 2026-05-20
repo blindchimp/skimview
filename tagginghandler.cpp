@@ -14,17 +14,26 @@
 #include <QJsonObject>
 #include <QDebug>
 
+#include <signal.h>
+
 TaggingHandler::TaggingHandler(QObject *parent)
     : QObject(parent)
     , m_process(nullptr)
 {
+    connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit, this, [this]() {
+        if (m_process && m_process->state() != QProcess::NotRunning)
+        {
+            killProcessGroup();
+            m_process->waitForFinished(2000);
+        }
+    });
 }
 
 TaggingHandler::~TaggingHandler()
 {
     if (m_process)
     {
-        m_process->kill();
+        killProcessGroup();
         m_process->waitForFinished(3000);
     }
 }
@@ -91,7 +100,7 @@ void TaggingHandler::cancel()
 
     // Block signals so onProcessFinished doesn't override our message
     m_process->blockSignals(true);
-    m_process->kill();
+    killProcessGroup();
     m_process->waitForFinished(2000);
     m_process->deleteLater();
     m_process = nullptr;
@@ -213,6 +222,21 @@ void TaggingHandler::onErrorOccurred(QProcess::ProcessError error)
         m_errorMessage = "The tagging process encountered an error.";
         emit errorMessageChanged();
     }
+}
+
+void TaggingHandler::killProcessGroup()
+{
+    if (!m_process)
+        return;
+
+    qint64 pid = m_process->processId();
+    if (pid > 0)
+    {
+        QProcess p;
+        p.start("pkill", {"-P", QString::number(pid)});
+        p.waitForFinished(5000);
+    }
+    m_process->kill();
 }
 
 QString TaggingHandler::findScript() const

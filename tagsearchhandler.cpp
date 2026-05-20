@@ -81,6 +81,29 @@ bool TagSearchHandler::hasTagsDb(const QString &folderUrl) const
     return QFile::exists(path + "/tags.db");
 }
 
+int TagSearchHandler::tagCount(const QString &folderUrl) const
+{
+    QString path = toLocalPath(folderUrl);
+    QString dbPath = path + "/tags.db";
+    if (!QFile::exists(dbPath))
+        return 0;
+
+    QString connName = QString("tagCount_%1").arg(reinterpret_cast<quintptr>(this));
+    int count = 0;
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connName);
+        db.setDatabaseName(dbPath);
+        if (db.open())
+        {
+            QSqlQuery q(db);
+            if (q.exec("SELECT COUNT(*) FROM images") && q.next())
+                count = q.value(0).toInt();
+        }
+    }
+    QSqlDatabase::removeDatabase(connName);
+    return count;
+}
+
 bool TagSearchHandler::deleteTagsDb(const QString &folderUrl) const
 {
     QString path = toLocalPath(folderUrl);

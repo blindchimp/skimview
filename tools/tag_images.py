@@ -37,11 +37,12 @@ MAX_WORKERS = 4
 
 
 class ProgressTracker:
-    def __init__(self, total: int):
+    def __init__(self, total: int, done: int = 0):
         self.total = total
-        self.ocr_count = 0
-        self.tag_count = 0
+        self.ocr_count = done
+        self.tag_count = done
         self._lock = threading.Lock()
+        self._emit()
 
     def ocr_done(self):
         with self._lock:
@@ -293,7 +294,8 @@ def main():
         print("Cannot proceed without Ollama.", file=sys.stderr)
         sys.exit(1)
 
-    tracker = ProgressTracker(total_to_process)
+    already_done = len(images) - total_to_process
+    tracker = ProgressTracker(len(images), already_done)
     start = time.time()
     tagged = skipped = errors = 0
 
