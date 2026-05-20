@@ -48,9 +48,21 @@ qt_add_qml_module(ImageViewer
         ImageViewer.qml
 )
 
+# Copy tools to build directory so they're available at runtime
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tools DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 target_compile_definitions(ImageViewer PRIVATE
-    TOOLS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tools"
+    TOOLS_DIR="${CMAKE_CURRENT_BINARY_DIR}/tools"
 )
+
+if(APPLE)
+    # Embed tag_images.py in the macOS app bundle's Resources/tools/
+    set(tag_script "${CMAKE_CURRENT_SOURCE_DIR}/tools/tag_images.py")
+    set_source_files_properties(${tag_script} PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources/tools"
+    )
+    target_sources(ImageViewer PRIVATE ${tag_script})
+endif()
 
 target_link_libraries(ImageViewer PRIVATE
     Qt6::Core

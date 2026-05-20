@@ -245,6 +245,7 @@ QString TaggingHandler::findScript() const
     QStringList searchPaths;
     QString appDir = QCoreApplication::applicationDirPath();
     
+    searchPaths << appDir + "/../Resources/tools/tag_images.py";
     searchPaths << appDir + "/tools/tag_images.py";
     searchPaths << appDir + "/../tools/tag_images.py";
     searchPaths << appDir + "/../../tools/tag_images.py";
