@@ -22,6 +22,7 @@ public:
     Q_INVOKABLE bool hasTagsDb(const QString &folderUrl) const;
     Q_INVOKABLE int tagCount(const QString &folderUrl) const;
     Q_INVOKABLE bool deleteTagsDb(const QString &folderUrl) const;
+    Q_INVOKABLE void pruneStaleEntries(const QString &folderUrl) const;
 };
 
 #endif // TAGSEARCHHANDLER_H

@@ -104,6 +104,49 @@ int TagSearchHandler::tagCount(const QString &folderUrl) const
     return count;
 }
 
+void TagSearchHandler::pruneStaleEntries(const QString &folderUrl) const
+{
+    QString path = toLocalPath(folderUrl);
+    QString dbPath = path + "/tags.db";
+    if (!QFile::exists(dbPath))
+        return;
+
+    QString connName = QString("tagPrune_%1").arg(reinterpret_cast<quintptr>(this));
+
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connName);
+        db.setDatabaseName(dbPath);
+
+        if (db.open())
+        {
+            QSqlQuery q(db);
+            if (q.exec("SELECT path FROM images"))
+            {
+                QStringList toDelete;
+                while (q.next())
+                {
+                    QString imgPath = q.value(0).toString();
+                    if (!QFile::exists(imgPath))
+                        toDelete.append(imgPath);
+                }
+
+                if (!toDelete.isEmpty())
+                {
+                    QSqlQuery del(db);
+                    del.prepare("DELETE FROM images WHERE path = ?");
+                    for (const QString &p : toDelete)
+                    {
+                        del.addBindValue(p);
+                        del.exec();
+                    }
+                }
+            }
+        }
+    }
+
+    QSqlDatabase::removeDatabase(connName);
+}
+
 bool TagSearchHandler::deleteTagsDb(const QString &folderUrl) const
 {
     QString path = toLocalPath(folderUrl);

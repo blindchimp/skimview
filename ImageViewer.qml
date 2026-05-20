@@ -360,6 +360,7 @@ ApplicationWindow {
     function checkTagsDb() {
         hasTagsDb = tagSearchHandler ? tagSearchHandler.hasTagsDb(folderModel.folder) : false
         if (hasTagsDb) {
+            tagSearchHandler.pruneStaleEntries(folderModel.folder)
             var count = tagSearchHandler ? tagSearchHandler.tagCount(folderModel.folder) : 0
             needsTagUpdate = count < folderModel.count
         } else {
