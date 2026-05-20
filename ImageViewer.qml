@@ -1,3 +1,9 @@
+// Copyright (c) 2026-present, Dwyco, Inc.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this file,
+// You can obtain one at https://mozilla.org/MPL/2.0/.
+
 // WARNING: vibe coded ca. 2026
 import QtQuick
 import QtQuick.Controls
@@ -38,6 +44,7 @@ ApplicationWindow {
         showDirs: false
         sortField: currentSortField
         sortReversed: !sortAscending
+        onFolderChanged: checkTagsDb()
     }
 
     // Set initial folder when component is completed
@@ -45,6 +52,7 @@ ApplicationWindow {
         if (initialFolder !== "") {
             folderModel.folder = initialFolder
         }
+        checkTagsDb()
     }
 
     // Properties for sort control
@@ -53,6 +61,19 @@ ApplicationWindow {
 
     // Property for search filter
     property string searchFilter: ""
+
+    // Property for tag search mode
+    property bool tagSearchMode: false
+
+    // Properties for OCR text and tags display
+    property string ocrText: ""
+    property string tags: ""
+    property bool showOcrPanel: false
+
+    // Whether tags.db exists in the current folder
+    property bool hasTagsDb: false
+    // Whether tags.db exists but is missing entries for some images
+    property bool needsTagUpdate: false
 
     header: ToolBar {
         background: Rectangle { color: "#1f1f1f" }
@@ -85,6 +106,18 @@ ApplicationWindow {
                     onClicked: {
                         var fileUrl = folderModel.get(gridCurrentIndex, "fileUrl")
                         clipboardHandler.copyToClipboard(fileUrl)
+                    }
+                }
+
+                Button {
+                    text: "Reset DB"
+                    visible: hasTagsDb
+                    onClicked: {
+                        tagSearchHandler.deleteTagsDb(folderModel.folder)
+                        ocrText = ""
+                        tags = ""
+                        checkTagsDb()
+                        gridView.forceActiveFocus()
                     }
                 }
 
@@ -169,6 +202,22 @@ ApplicationWindow {
                     onClicked: sortAscending = !sortAscending
                 }
 
+                // Toggle between filename and tag search
+                Button {
+                    text: tagSearchMode ? "Tags" : "Name"
+                    checkable: true
+                    checked: tagSearchMode
+                    onClicked: {
+                        tagSearchMode = !tagSearchMode
+                        searchField.placeholderText = tagSearchMode ? "Search tags..." : "Search filename..."
+                        searchFilter = searchField.text
+                        if (tagSearchMode)
+                            doTagSearch(searchField.text)
+                        else
+                            updateFilters()
+                    }
+                }
+
                 // Search filter
                 TextField {
                     id: searchField
@@ -176,7 +225,10 @@ ApplicationWindow {
                     placeholderText: "Search filename..."
                     onTextEdited: {
                         searchFilter = text
-                        updateFilters()
+                        if (tagSearchMode)
+                            doTagSearch(text)
+                        else
+                            updateFilters()
                     }
                 }
             }
@@ -208,6 +260,110 @@ ApplicationWindow {
                     }
                 }
             }
+
+            // Fifth row: Tag images button (shown when no tags.db exists, or it is stale)
+            RowLayout {
+                id: tagDbRow
+                visible: !hasTagsDb || needsTagUpdate || (taggingHandler && taggingHandler.running)
+                Layout.fillWidth: true
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+
+                Button {
+                    id: tagDbButton
+                    text: taggingHandler && taggingHandler.running ? "Cancel" : "Tag Images in Folder"
+                    onClicked: {
+                        if (taggingHandler && taggingHandler.running)
+                            taggingHandler.cancel()
+                        else if (taggingHandler)
+                            taggingHandler.start(folderModel.folder)
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+
+                    Label {
+                        text: {
+                            if (taggingHandler && taggingHandler.running) return ""
+                            if (taggingHandler && taggingHandler.errorMessage !== "") return "Error: " + taggingHandler.errorMessage
+                            return "Generate AI tags and OCR for all images in this folder"
+                        }
+                        color: taggingHandler && taggingHandler.running ? "#aaaaaa" : "#ff6666"
+                        wrapMode: Text.WordWrap
+                        visible: text.length > 0
+                        Layout.fillWidth: true
+                    }
+
+                    RowLayout {
+                        visible: taggingHandler && taggingHandler.running && taggingHandler.ocrTotal > 0
+                        spacing: 6
+                        Layout.fillWidth: true
+
+                        Label {
+                            text: "OCR:"
+                            color: "#cccccc"
+                        }
+
+                        Label {
+                            text: (taggingHandler ? taggingHandler.ocrCompleted : 0) + "/" + (taggingHandler ? taggingHandler.ocrTotal : 0)
+                            color: "#aaaaaa"
+                            font.bold: true
+                        }
+
+                        ProgressBar {
+                            from: 0
+                            to: taggingHandler ? taggingHandler.ocrTotal : 1
+                            value: taggingHandler ? taggingHandler.ocrCompleted : 0
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 12
+                        }
+                    }
+
+                    RowLayout {
+                        visible: taggingHandler && taggingHandler.running && taggingHandler.tagTotal > 0
+                        spacing: 6
+                        Layout.fillWidth: true
+
+                        Label {
+                            text: "Tag:"
+                            color: "#cccccc"
+                        }
+
+                        Label {
+                            text: (taggingHandler ? taggingHandler.tagCompleted : 0) + "/" + (taggingHandler ? taggingHandler.tagTotal : 0)
+                            color: "#aaaaaa"
+                            font.bold: true
+                        }
+
+                        ProgressBar {
+                            from: 0
+                            to: taggingHandler ? taggingHandler.tagTotal : 1
+                            value: taggingHandler ? taggingHandler.tagCompleted : 0
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 12
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Re-check tags.db when tagging finishes
+    Connections {
+        target: taggingHandler
+        function onFinished(success) { checkTagsDb() }
+    }
+
+    // Check if tags.db exists and whether it's up-to-date
+    function checkTagsDb() {
+        hasTagsDb = tagSearchHandler ? tagSearchHandler.hasTagsDb(folderModel.folder) : false
+        if (hasTagsDb) {
+            var count = tagSearchHandler ? tagSearchHandler.tagCount(folderModel.folder) : 0
+            needsTagUpdate = count < folderModel.count
+        } else {
+            needsTagUpdate = false
         }
     }
 
@@ -222,6 +378,34 @@ ApplicationWindow {
                 "*" + searchFilter + "*.jpeg",
                 "*" + searchFilter + "*.webp"
             ]
+        }
+    }
+
+    // Search by tags/OCR/description via SQLite tags.db
+    function doTagSearch(query) {
+        if (query.length === 0) {
+            folderModel.nameFilters = ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+            return
+        }
+        var results = tagSearchHandler.search(folderModel.folder, query)
+        if (results.length > 0)
+            folderModel.nameFilters = results
+        else
+            folderModel.nameFilters = ["__no_match__"]
+    }
+
+    // Load OCR text and tags for the current image from tags.db
+    function loadImageInfo(imageUrl) {
+        if (imageUrl === "") {
+            ocrText = ""
+            tags = ""
+            showOcrPanel = false
+            return
+        }
+        if (tagSearchHandler) {
+            var info = tagSearchHandler.getImageInfo(imageUrl)
+            ocrText = info.ocr_text || ""
+            tags = info.tags || ""
         }
     }
 
@@ -445,7 +629,7 @@ ApplicationWindow {
             source: fullImageUrl
             fillMode: Image.PreserveAspectFit
             asynchronous: true
-            visible: fullImageUrl !== ""
+            visible: fullImageUrl !== "" && !showOcrPanel
             scale: zoomScale
 
             PinchHandler {
@@ -489,6 +673,56 @@ ApplicationWindow {
             }
         }
 
+        // OCR text panel (shown instead of image when toggled)
+        ScrollView {
+            id: ocrPanel
+            visible: fullImageUrl !== "" && showOcrPanel
+            anchors.fill: parent
+            anchors.bottomMargin: 36
+            anchors.topMargin: 4
+            clip: true
+            TextArea {
+                text: ocrText
+                color: "white"
+                wrapMode: Text.WordWrap
+                readOnly: true
+                selectByMouse: true
+                font.pixelSize: 14
+                padding: 10
+                background: null
+            }
+        }
+
+        // OCR toggle button
+        Button {
+            id: ocrButton
+            visible: fullImageUrl !== "" && ocrText.length > 20
+            text: showOcrPanel ? "Hide OCR" : "Show OCR"
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 10
+            z: 10
+            onClicked: showOcrPanel = !showOcrPanel
+        }
+
+        // Tags bar at bottom of full image view
+        Rectangle {
+            id: tagsBar
+            visible: fullImageUrl !== ""
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 30
+            color: "#1f1f1f"
+            Label {
+                anchors.fill: parent
+                anchors.margins: 5
+                text: tags.length > 0 ? "Tags: " + tags : "(no tags)"
+                color: "#aaaaaa"
+                elide: Text.ElideRight
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
 
 
         Text {
@@ -560,6 +794,7 @@ ApplicationWindow {
 
     // Update gridCurrentIndex when opening a different image
     onFullImageUrlChanged: {
+        loadImageInfo(fullImageUrl)
         if (fullImageUrl !== "") {
             for (var i = 0; i < folderModel.count; i++) {
                 if (folderModel.get(i, "fileUrl") === fullImageUrl) {

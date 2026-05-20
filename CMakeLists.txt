@@ -10,7 +10,7 @@ set(CMAKE_AUTOUIC ON)
 
 #set(CMAKE_PREFIX_PATH "$ENV{HOME}/Qt/6.11.0/macos")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Sql)
 
 qt_add_executable(ImageViewer
     main.cpp
@@ -18,6 +18,10 @@ qt_add_executable(ImageViewer
     trashhandler.cpp
     cliphandler.h
     cliphandler.cpp
+    tagsearchhandler.h
+    tagsearchhandler.cpp
+    tagginghandler.h
+    tagginghandler.cpp
     icon.icns
 )
 
@@ -44,8 +48,13 @@ qt_add_qml_module(ImageViewer
         ImageViewer.qml
 )
 
+target_compile_definitions(ImageViewer PRIVATE
+    TOOLS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tools"
+)
+
 target_link_libraries(ImageViewer PRIVATE
     Qt6::Core
     Qt6::Quick
     Qt6::QuickControls2
+    Qt6::Sql
 )

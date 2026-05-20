@@ -1,8 +1,8 @@
 some little things to include:
-(easy) * display file name currently selected
-(easy) * allow copy and past of name currently selected
-(easy) * buttons for sorting on time/name asc/desc
-(easy) * zoom w/ pinching and zoom buttons
-(easy) * search for time/name
-(hard) * content via image model
+(easy, done, AI) * display file name currently selected
+(easy, done, AI) * allow copy and past of name currently selected
+(easy, done, AI) * buttons for sorting on time/name asc/desc
+(easy, done, AI) * zoom w/ pinching and zoom buttons
+(easy, done, AI) * search for time/name
+(hard, done, AI) * content via image model
 

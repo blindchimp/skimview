@@ -1,3 +1,9 @@
+// Copyright (c) 2026-present, Dwyco, Inc.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this file,
+// You can obtain one at https://mozilla.org/MPL/2.0/.
+
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -8,6 +14,8 @@
 #include <QDebug>
 #include "trashhandler.h"
 #include "cliphandler.h"
+#include "tagsearchhandler.h"
+#include "tagginghandler.h"
 
 int main(int argc, char *argv[])
 {
@@ -43,6 +51,14 @@ int main(int argc, char *argv[])
     // Register ClipboardHandler for use in QML
     ClipboardHandler clipboardHandler;
     context->setContextProperty("clipboardHandler", &clipboardHandler);
+
+    // Register TagSearchHandler for use in QML
+    TagSearchHandler tagSearchHandler;
+    context->setContextProperty("tagSearchHandler", &tagSearchHandler);
+
+    // Register TaggingHandler for use in QML
+    TaggingHandler taggingHandler;
+    context->setContextProperty("taggingHandler", &taggingHandler);
 
     // Pass the initial folder path to QML as a file:// URL
     if(initial_folder)
