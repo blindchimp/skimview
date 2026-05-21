@@ -232,7 +232,7 @@ ApplicationWindow {
                 TextField {
                     id: searchField
                     Layout.fillWidth: true
-                    placeholderText: "Search filename..."
+                    placeholderText: "Search filename... (press Enter to return to grid)"
                     onTextEdited: {
                         searchFilter = text
                         if (tagSearchMode)
@@ -261,7 +261,7 @@ ApplicationWindow {
                 TextField {
                     id: dateSearchField
                     Layout.fillWidth: true
-                    placeholderText: "e.g. 2024-01-15, 'one month ago', '2 weeks ago', yesterday, today"
+                    placeholderText: "e.g. 2024-01-15, 'one month ago', '2 weeks ago', yesterday, today (press Enter to return to grid)"
                     onAccepted: {
                         scrollToDate(text)
                         focus = false
