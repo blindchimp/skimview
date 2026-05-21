@@ -240,6 +240,68 @@ ApplicationWindow {
                         else
                             updateFilters()
                     }
+                    Keys.onPressed: function(event) {
+                        if (folderModel.count > 0) {
+                            var handled = false
+                            switch (event.key) {
+                            case Qt.Key_Left:
+                                gridCurrentIndex = (gridCurrentIndex - 1 + folderModel.count) % folderModel.count
+                                if (fullImageUrl !== "")
+                                    fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+                                else {
+                                    gridView.currentIndex = gridCurrentIndex
+                                    gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+                                }
+                                handled = true
+                                break
+                            case Qt.Key_Right:
+                                gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
+                                if (fullImageUrl !== "")
+                                    fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+                                else {
+                                    gridView.currentIndex = gridCurrentIndex
+                                    gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+                                }
+                                handled = true
+                                break
+                            case Qt.Key_Up:
+                                if (fullImageUrl === "") {
+                                    var cols = Math.floor((gridView.width + 10) / gridView.cellWidth)
+                                    if (cols > 0) {
+                                        gridCurrentIndex = (gridCurrentIndex - cols + folderModel.count) % folderModel.count
+                                        gridView.currentIndex = gridCurrentIndex
+                                        gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+                                    }
+                                }
+                                handled = true
+                                break
+                            case Qt.Key_Down:
+                                if (fullImageUrl === "") {
+                                    cols = Math.floor((gridView.width + 10) / gridView.cellWidth)
+                                    if (cols > 0) {
+                                        gridCurrentIndex = (gridCurrentIndex + cols) % folderModel.count
+                                        gridView.currentIndex = gridCurrentIndex
+                                        gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+                                    }
+                                }
+                                handled = true
+                                break
+                            case Qt.Key_Return:
+                            case Qt.Key_Enter:
+                                if (fullImageUrl === "" && gridCurrentIndex >= 0 && gridCurrentIndex < folderModel.count)
+                                    fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+                                handled = true
+                                break
+                            case Qt.Key_Space:
+                                if (fullImageUrl === "" && gridCurrentIndex >= 0 && gridCurrentIndex < folderModel.count)
+                                    fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+                                handled = true
+                                break
+                            }
+                            if (handled)
+                                event.accepted = true
+                        }
+                    }
                 }
             }
 
@@ -769,6 +831,52 @@ ApplicationWindow {
             gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
             gridView.currentIndex = gridCurrentIndex
             gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+        }
+    }
+
+    Shortcut {
+        sequence: "Up"
+        enabled: fullImageUrl === "" && folderModel.count > 0
+        onActivated: {
+            var cols = Math.floor((gridView.width + 10) / gridView.cellWidth)
+            if (cols > 0) {
+                gridCurrentIndex = (gridCurrentIndex - cols + folderModel.count) % folderModel.count
+                gridView.currentIndex = gridCurrentIndex
+                gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "Down"
+        enabled: fullImageUrl === "" && folderModel.count > 0
+        onActivated: {
+            var cols = Math.floor((gridView.width + 10) / gridView.cellWidth)
+            if (cols > 0) {
+                gridCurrentIndex = (gridCurrentIndex + cols) % folderModel.count
+                gridView.currentIndex = gridCurrentIndex
+                gridView.positionViewAtIndex(gridCurrentIndex, GridView.Contain)
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "Enter"
+        enabled: fullImageUrl === "" && folderModel.count > 0
+        onActivated: {
+            if (gridCurrentIndex >= 0 && gridCurrentIndex < folderModel.count) {
+                fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "Space"
+        enabled: fullImageUrl === "" && folderModel.count > 0
+        onActivated: {
+            if (gridCurrentIndex >= 0 && gridCurrentIndex < folderModel.count) {
+                fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+            }
         }
     }
 
