@@ -24,6 +24,8 @@ ApplicationWindow {
     property real initialZoomScale: 1.0
     property real panX: 0
     property real panY: 0
+    property real thumbnailZoom: 1.0
+    property real baseCellSize: 150
     // Property to receive initial folder from C++ (as QUrl string)
     //property var initialFolder: null
 
@@ -130,6 +132,8 @@ ApplicationWindow {
                             zoomScale = 2.0
                             panX = 0
                             panY = 0
+                        } else {
+                            thumbnailZoom = 2.0
                         }
                     }
                 }
@@ -141,6 +145,8 @@ ApplicationWindow {
                             zoomScale = 1.0
                             panX = 0
                             panY = 0
+                        } else {
+                            thumbnailZoom = 1.0
                         }
                     }
                 }
@@ -152,6 +158,8 @@ ApplicationWindow {
                             zoomScale = 0.5
                             panX = 0
                             panY = 0
+                        } else {
+                            thumbnailZoom = 0.5
                         }
                     }
                 }
@@ -532,8 +540,8 @@ ApplicationWindow {
             id: gridView
             anchors.fill: parent
             visible: fullImageUrl === ""
-            cellWidth: 150
-            cellHeight: 150
+            cellWidth: baseCellSize * thumbnailZoom
+            cellHeight: baseCellSize * thumbnailZoom
             clip: true
             focus: true
 
@@ -558,8 +566,8 @@ ApplicationWindow {
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     cache: true
-                    sourceSize.width: 200
-                    sourceSize.height: 200
+                    sourceSize.width: Math.max(200, Math.ceil(gridView.cellWidth) * 2)
+                    sourceSize.height: Math.max(200, Math.ceil(gridView.cellHeight) * 2)
                 }
 
                 MouseArea {
@@ -589,7 +597,7 @@ ApplicationWindow {
             Keys.onUpPressed: {
                 if (folderModel.count > 0) {
                     // Calculate number of columns based on grid width
-                    var cols = Math.floor((gridView.width + 10) / 150)
+                    var cols = Math.floor((gridView.width + 10) / gridView.cellWidth)
                     if (cols > 0) {
                         gridCurrentIndex = (gridCurrentIndex - cols + folderModel.count) % folderModel.count
                         gridView.currentIndex = gridCurrentIndex
@@ -600,7 +608,7 @@ ApplicationWindow {
             Keys.onDownPressed: {
                 if (folderModel.count > 0) {
                     // Calculate number of columns based on grid width
-                    var cols = Math.floor((gridView.width + 10) / 150)
+                    var cols = Math.floor((gridView.width + 10) / gridView.cellWidth)
                     if (cols > 0) {
                         gridCurrentIndex = (gridCurrentIndex + cols) % folderModel.count
                         gridView.currentIndex = gridCurrentIndex
