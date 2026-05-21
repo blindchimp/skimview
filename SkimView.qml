@@ -43,7 +43,8 @@ ApplicationWindow {
         nameFilters: ["*.png", "*.jpg", "*.jpeg", "*.webp"]
         showDirs: false
         sortField: currentSortField
-        sortReversed: !sortAscending
+        sortCaseSensitive: true
+        sortReversed: currentSortField === FolderListModel.Time ? !dateSortAscending : !nameSortAscending
         onFolderChanged: checkTagsDb()
     }
 
@@ -57,7 +58,8 @@ ApplicationWindow {
 
     // Properties for sort control
     property int currentSortField: FolderListModel.Name
-    property bool sortAscending: true
+    property bool nameSortAscending: true
+    property bool dateSortAscending: true
 
     // Property for search filter
     property string searchFilter: ""
@@ -178,28 +180,28 @@ ApplicationWindow {
                 anchors.leftMargin: 10
                 anchors.rightMargin: 10
 
-                // Sort by name
+                // Sort by name (toggle)
                 Button {
-                    text: currentSortField === FolderListModel.Name ? (sortAscending ? "Name Asc" : "Name Desc")
+                    text: currentSortField === FolderListModel.Name ? (nameSortAscending ? "Name A-Z" : "Name Z-A")
                                                                       : "Name"
                     onClicked: {
-                        currentSortField = FolderListModel.Name
+                        if (currentSortField !== FolderListModel.Name)
+                            currentSortField = FolderListModel.Name
+                        else
+                            nameSortAscending = !nameSortAscending
                     }
                 }
 
-                // Sort by date
+                // Sort by date (toggle)
                 Button {
-                    text: currentSortField === FolderListModel.Time ? (sortAscending ? "Newest to Oldest" : "Oldest to Newest")
+                    text: currentSortField === FolderListModel.Time ? (dateSortAscending ? "Oldest to Newest" : "Newest to Oldest")
                                                                       : "Date"
                     onClicked: {
-                        currentSortField = FolderListModel.Time
+                        if (currentSortField !== FolderListModel.Time)
+                            currentSortField = FolderListModel.Time
+                        else
+                            dateSortAscending = !dateSortAscending
                     }
-                }
-
-                // Toggle sort order
-                Button {
-                    text: sortAscending ? "Ascending" : "Descending"
-                    onClicked: sortAscending = !sortAscending
                 }
 
                 // Toggle between filename and tag search
