@@ -8,7 +8,7 @@
 #
 # WARNING: vibe coded, 2026
 
-# Build and package script for ImageViewer Qt6 app
+# Build and package script for SkimView Qt6 app
 # Usage: ./build_dmg.sh [--sign] [--identity "Developer ID Application: Your Name"] [--notarize]
 
 set -e
@@ -16,7 +16,7 @@ set -e
 # Configuration
 QT_PATH="$HOME/Qt/6.11.1/macos"
 QT_BIN="$QT_PATH/bin"
-APP_NAME="ImageViewer"
+APP_NAME="SkimView"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="/tmp/build"
 INSTALL_DIR="$BUILD_DIR/install"

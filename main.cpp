@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 
     }
 
-    const QUrl url(QStringLiteral("qrc:/ImageViewer/ImageViewer.qml"));
+    const QUrl url(QStringLiteral("qrc:/SkimView/SkimView.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl)

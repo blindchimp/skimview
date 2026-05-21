@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(ImageViewer VERSION 1.0 LANGUAGES CXX)
+project(SkimView VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,7 +12,7 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Sql)
 
-qt_add_executable(ImageViewer
+qt_add_executable(SkimView
     main.cpp
     trashhandler.h
     trashhandler.cpp
@@ -33,25 +33,25 @@ set_source_files_properties(${app_icon} PROPERTIES
 )
 endif()
 
-set_target_properties(ImageViewer PROPERTIES
+set_target_properties(SkimView PROPERTIES
     MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_GUI_IDENTIFIER "com.example.ImageViewer"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.example.SkimView"
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
    # MACOSX_BUNDLE_ICON_FILE icon.icns
 )
 
-qt_add_qml_module(ImageViewer
-    URI ImageViewer
+qt_add_qml_module(SkimView
+    URI SkimView
     VERSION 1.0
     QML_FILES
-        ImageViewer.qml
+        SkimView.qml
 )
 
 # Copy tools to build directory so they're available at runtime
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tools DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-target_compile_definitions(ImageViewer PRIVATE
+target_compile_definitions(SkimView PRIVATE
     TOOLS_DIR="${CMAKE_CURRENT_BINARY_DIR}/tools"
 )
 
@@ -61,10 +61,10 @@ if(APPLE)
     set_source_files_properties(${tag_script} PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources/tools"
     )
-    target_sources(ImageViewer PRIVATE ${tag_script})
+    target_sources(SkimView PRIVATE ${tag_script})
 endif()
 
-target_link_libraries(ImageViewer PRIVATE
+target_link_libraries(SkimView PRIVATE
     Qt6::Core
     Qt6::Quick
     Qt6::QuickControls2
