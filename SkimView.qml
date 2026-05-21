@@ -43,8 +43,8 @@ ApplicationWindow {
         nameFilters: ["*.png", "*.jpg", "*.jpeg", "*.webp"]
         showDirs: false
         sortField: currentSortField
-        sortCaseSensitive: true
-        sortReversed: currentSortField === FolderListModel.Time ? !dateSortAscending : !nameSortAscending
+        sortCaseSensitive: false
+        sortReversed: currentSortField === FolderListModel.Time ? dateSortAscending : !nameSortAscending
         onFolderChanged: checkTagsDb()
     }
 
@@ -59,7 +59,7 @@ ApplicationWindow {
     // Properties for sort control
     property int currentSortField: FolderListModel.Name
     property bool nameSortAscending: true
-    property bool dateSortAscending: true
+    property bool dateSortAscending: false
 
     // Property for search filter
     property string searchFilter: ""
