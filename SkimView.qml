@@ -240,6 +240,10 @@ ApplicationWindow {
                         else
                             updateFilters()
                     }
+                    onAccepted: {
+                        focus = false
+                        gridView.forceActiveFocus()
+                    }
                 }
             }
 
@@ -260,6 +264,8 @@ ApplicationWindow {
                     placeholderText: "e.g. 2024-01-15, 'one month ago', '2 weeks ago', yesterday, today"
                     onAccepted: {
                         scrollToDate(text)
+                        focus = false
+                        gridView.forceActiveFocus()
                     }
                 }
 
