@@ -189,7 +189,7 @@ ApplicationWindow {
 
                 // Sort by date
                 Button {
-                    text: currentSortField === FolderListModel.Time ? (sortAscending ? "Date Asc" : "Date Desc")
+                    text: currentSortField === FolderListModel.Time ? (sortAscending ? "Newest to Oldest" : "Oldest to Newest")
                                                                       : "Date"
                     onClicked: {
                         currentSortField = FolderListModel.Time
