@@ -8,6 +8,22 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+# Read major version from VERSION file
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" APP_VERSION_MAJOR_RAW)
+string(STRIP "${APP_VERSION_MAJOR_RAW}" APP_VERSION_MAJOR)
+
+# Get git commit SHA for release versioning
+execute_process(
+  COMMAND git rev-parse --short HEAD
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  OUTPUT_VARIABLE APP_GIT_SHA
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_QUIET
+)
+if(APP_GIT_SHA STREQUAL "")
+  set(APP_GIT_SHA "unknown")
+endif()
+
 #set(CMAKE_PREFIX_PATH "$ENV{HOME}/Qt/6.11.0/macos")
 
 find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Sql)
@@ -53,6 +69,9 @@ file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tools DESTINATION ${CMAKE_CURRENT_BINARY_D
 
 target_compile_definitions(SkimView PRIVATE
     TOOLS_DIR="${CMAKE_CURRENT_BINARY_DIR}/tools"
+    APP_VERSION_MAJOR="${APP_VERSION_MAJOR}"
+    APP_GIT_SHA="${APP_GIT_SHA}"
+    $<$<CONFIG:Debug>:APP_BUILD_DEBUG>
 )
 
 if(APPLE)

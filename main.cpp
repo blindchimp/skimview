@@ -41,8 +41,16 @@ int main(int argc, char *argv[])
         }
     }
 
+#ifdef APP_BUILD_DEBUG
+    QString versionStr = QStringLiteral("SkimView v%1 (%2)").arg(APP_VERSION_MAJOR, __TIME__);
+#else
+    QString versionStr = QStringLiteral("SkimView v%1 (commit %2)").arg(APP_VERSION_MAJOR, APP_GIT_SHA);
+#endif
+
     QQmlApplicationEngine engine;
     QQmlContext *context = engine.rootContext();
+
+    context->setContextProperty("appVersionTitle", versionStr);
 
     // Register TrashHandler for use in QML
     TrashHandler trashHandler;

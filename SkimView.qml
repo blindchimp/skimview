@@ -16,7 +16,7 @@ ApplicationWindow {
     visible: true
     width: 800
     height: 600
-    title: "Image Viewer"
+    title: appVersionTitle
 
     property string fullImageUrl: ""
     property int gridCurrentIndex: -1

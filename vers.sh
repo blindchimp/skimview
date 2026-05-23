@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-BASE_VERSION=$(cat VERSION)
+BASE_VERSION=$(cat VERSION.txt)
 BUILD=$(git rev-list --count HEAD)
 SHA=$(git rev-parse --short HEAD)
 
