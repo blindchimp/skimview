@@ -26,7 +26,7 @@ endif()
 
 #set(CMAKE_PREFIX_PATH "$ENV{HOME}/Qt/6.11.0/macos")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Sql)
+find_package(Qt6 REQUIRED COMPONENTS Core Quick QuickControls2 Sql Svg )
 
 qt_add_executable(SkimView
     main.cpp
@@ -88,4 +88,6 @@ target_link_libraries(SkimView PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
     Qt6::Sql
+    Qt6::Svg
+
 )

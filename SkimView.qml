@@ -42,7 +42,7 @@ ApplicationWindow {
     // 2. The Model that scans the folder
     FolderListModel {
         id: folderModel
-        nameFilters: ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+        nameFilters: ["*.bmp", "*.gif", "*.jpg", "*.jpeg", "*.pbm", "*.pgm", "*.pnm", "*.png", "*.ppm", "*.svg", "*.tif", "*.tiff", "*.webp", "*.xbm", "*.xpm"]
         showDirs: false
         sortField: currentSortField
         sortCaseSensitive: false
@@ -387,13 +387,24 @@ ApplicationWindow {
     // Function to update folder model filters
     function updateFilters() {
         if (searchFilter.length === 0) {
-            folderModel.nameFilters = ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+            folderModel.nameFilters = ["*.bmp", "*.gif", "*.jpg", "*.jpeg", "*.pbm", "*.pgm", "*.pnm", "*.png", "*.ppm", "*.svg", "*.tif", "*.tiff", "*.webp", "*.xbm", "*.xpm"]
         } else {
             folderModel.nameFilters = [
-                "*" + searchFilter + "*.png",
+                "*" + searchFilter + "*.bmp",
+                "*" + searchFilter + "*.gif",
                 "*" + searchFilter + "*.jpg",
                 "*" + searchFilter + "*.jpeg",
-                "*" + searchFilter + "*.webp"
+                "*" + searchFilter + "*.pbm",
+                "*" + searchFilter + "*.pgm",
+                "*" + searchFilter + "*.pnm",
+                "*" + searchFilter + "*.png",
+                "*" + searchFilter + "*.ppm",
+                "*" + searchFilter + "*.svg",
+                "*" + searchFilter + "*.tif",
+                "*" + searchFilter + "*.tiff",
+                "*" + searchFilter + "*.webp",
+                "*" + searchFilter + "*.xbm",
+                "*" + searchFilter + "*.xpm"
             ]
         }
     }
@@ -401,7 +412,7 @@ ApplicationWindow {
     // Search by tags/OCR/description via SQLite tags.db
     function doTagSearch(query) {
         if (query.length === 0) {
-            folderModel.nameFilters = ["*.png", "*.jpg", "*.jpeg", "*.webp"]
+            folderModel.nameFilters = ["*.bmp", "*.gif", "*.jpg", "*.jpeg", "*.pbm", "*.pgm", "*.pnm", "*.png", "*.ppm", "*.svg", "*.tif", "*.tiff", "*.webp", "*.xbm", "*.xpm"]
             return
         }
         var results = tagSearchHandler.search(folderModel.folder, query)
