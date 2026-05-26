@@ -30,8 +30,9 @@ from PIL import Image
 
 OLLAMA_BASE_URL = "http://localhost:11434"
 SUPPORTED_EXTENSIONS = frozenset({
-    ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".tif",
-    ".webp", ".heic", ".heif", ".avif",
+    ".bmp", ".gif", ".jpg", ".jpeg", ".pbm", ".pgm", ".pnm",
+    ".png", ".ppm", ".svg", ".tif", ".tiff", ".webp",
+    ".xbm", ".xpm", ".heic", ".heif", ".avif",
 })
 MAX_WORKERS = 4
 
