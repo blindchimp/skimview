@@ -6,6 +6,9 @@
 #   ./install_deps.sh --run    # install only deps needed to run the app + tagging
 #   ./install_deps.sh --build  # install only deps needed to build the app
 
+echo "DO NOT RUN THIS SCRIPT, IT IS AI GENERATED AND UNTESTED"
+exit 0
+
 set -euo pipefail
 
 MODE="${1:-all}"
