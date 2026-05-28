@@ -48,6 +48,7 @@ ApplicationWindow {
         sortCaseSensitive: false
         sortReversed: currentSortField === FolderListModel.Time ? dateSortAscending : !nameSortAscending
         onFolderChanged: checkTagsDb()
+        onCountChanged: checkTagsDb()
     }
 
     // Set initial folder when component is completed
