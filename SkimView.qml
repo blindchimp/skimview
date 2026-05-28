@@ -372,13 +372,12 @@ ApplicationWindow {
         function onFinished(success) { checkTagsDb() }
     }
 
-    // Check if tags.db exists and whether it's up-to-date
+    // Check if tags.db exists and whether there are untagged files
     function checkTagsDb() {
         hasTagsDb = tagSearchHandler ? tagSearchHandler.hasTagsDb(folderModel.folder) : false
         if (hasTagsDb) {
             tagSearchHandler.pruneStaleEntries(folderModel.folder)
-            var count = tagSearchHandler ? tagSearchHandler.tagCount(folderModel.folder) : 0
-            needsTagUpdate = count < folderModel.count
+            needsTagUpdate = tagSearchHandler ? tagSearchHandler.hasUntaggedFiles(folderModel.folder) : false
         } else {
             needsTagUpdate = false
         }

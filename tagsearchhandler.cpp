@@ -147,6 +147,49 @@ void TagSearchHandler::pruneStaleEntries(const QString &folderUrl) const
     QSqlDatabase::removeDatabase(connName);
 }
 
+bool TagSearchHandler::hasUntaggedFiles(const QString &folderUrl) const
+{
+    QString folderPath = toLocalPath(folderUrl);
+    QDir dir(folderPath);
+    QString dbPath = dir.filePath("tags.db");
+
+    QStringList nameFilters = {"*.bmp", "*.gif", "*.jpg", "*.jpeg", "*.pbm", "*.pgm", "*.pnm", "*.png", "*.ppm", "*.svg", "*.tif", "*.tiff", "*.webp", "*.xbm", "*.xpm"};
+    QFileInfoList files = dir.entryInfoList(nameFilters, QDir::Files);
+
+    if (files.isEmpty())
+        return false;
+
+    if (!QFile::exists(dbPath))
+        return true;
+
+    QString connName = QString("hasUntagged_%1").arg(reinterpret_cast<quintptr>(this));
+
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connName);
+        db.setDatabaseName(dbPath);
+
+        if (db.open())
+        {
+            QSet<QString> dbPaths;
+            QSqlQuery q(db);
+            if (q.exec("SELECT path FROM images"))
+            {
+                while (q.next())
+                    dbPaths.insert(q.value(0).toString());
+            }
+
+            for (const QFileInfo &fi : files)
+            {
+                if (!dbPaths.contains(fi.absoluteFilePath()))
+                    return true;
+            }
+        }
+    }
+
+    QSqlDatabase::removeDatabase(connName);
+    return false;
+}
+
 bool TagSearchHandler::deleteTagsDb(const QString &folderUrl) const
 {
     QString path = toLocalPath(folderUrl);
