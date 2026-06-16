@@ -58,7 +58,7 @@ set_target_properties(SkimView PROPERTIES
 )
 
 qt_add_qml_module(SkimView
-    URI SkimView
+    URI app.SkimView
     VERSION 1.0
     QML_FILES
         SkimView.qml

@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
     }
 
-    const QUrl url(QStringLiteral("qrc:/SkimView/SkimView.qml"));
+    const QUrl url(QStringLiteral("qrc:/app/SkimView/SkimView.qml"));
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl)
