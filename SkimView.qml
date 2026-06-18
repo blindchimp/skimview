@@ -26,14 +26,15 @@ ApplicationWindow {
     property real panY: 0
     property real thumbnailZoom: 1.0
     property real baseCellSize: 150
-    // Property to receive initial folder from C++ (as QUrl string)
-    //property var initialFolder: null
+    // Session-only: tracks the last opened folder so the dialog opens there next time
+    property url lastFolder: ""
 
     // 1. The Dialog to pick a folder
     FolderDialog {
         id: folderDialog
         title: "Select an Image Folder"
         onAccepted: {
+            lastFolder = folderDialog.folder
             folderModel.folder = folderDialog.folder
             fullImageUrl = "" // Close full view if open
         }
@@ -94,7 +95,11 @@ ApplicationWindow {
 
                 Button {
                     text: "Open Folder"
-                    onClicked: folderDialog.open()
+                    onClicked: {
+                        if (lastFolder.toString() !== "")
+                            folderDialog.currentFolder = lastFolder
+                        folderDialog.open()
+                    }
                 }
 
                 Label {
