@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=SkimView
+Comment=Simple Qt6 Image Viewer
+Exec=SkimView
+Icon=skimview
+Type=Application
+Categories=Graphics;Viewer;
+Terminal=false
