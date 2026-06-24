@@ -64,8 +64,12 @@ qt_add_qml_module(SkimView
         SkimView.qml
 )
 
-# Copy tools to build directory so they're available at runtime
+# Copy tools to build directory at cmake time (initial) and at build time (sync)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/tools DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+add_custom_command(TARGET SkimView PRE_LINK
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/tools ${CMAKE_CURRENT_BINARY_DIR}/tools
+    COMMENT "Syncing tools/ to build directory"
+)
 
 target_compile_definitions(SkimView PRIVATE
     TOOLS_DIR="${CMAKE_CURRENT_BINARY_DIR}/tools"

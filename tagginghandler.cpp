@@ -164,9 +164,9 @@ void TaggingHandler::parseProgressLine(const QByteArray &line)
         return;
 
     m_ocrCompleted = obj.value("ocr").toInt();
-    m_ocrTotal = obj.value("total").toInt();
+    m_ocrTotal = obj.value("ocr_total").toInt();
     m_tagCompleted = obj.value("tag").toInt();
-    m_tagTotal = obj.value("total").toInt();
+    m_tagTotal = obj.value("tag_total").toInt();
     emit progressChanged();
 }
 

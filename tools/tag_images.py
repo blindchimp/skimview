@@ -24,9 +24,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional
 
-import pytesseract
 import requests
 from PIL import Image
+
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
 
 OLLAMA_BASE_URL = "http://localhost:11434"
 SUPPORTED_EXTENSIONS = frozenset({
@@ -38,10 +42,11 @@ MAX_WORKERS = 4
 
 
 class ProgressTracker:
-    def __init__(self, total: int, done: int = 0):
-        self.total = total
-        self.ocr_count = done
-        self.tag_count = done
+    def __init__(self, ocr_total: int, tag_total: int, ocr_done: int = 0, tag_done: int = 0):
+        self.ocr_total = ocr_total
+        self.tag_total = tag_total
+        self.ocr_count = ocr_done
+        self.tag_count = tag_done
         self._lock = threading.Lock()
         self._emit()
 
@@ -59,8 +64,9 @@ class ProgressTracker:
         print(json.dumps({
             "type": "progress",
             "ocr": self.ocr_count,
+            "ocr_total": self.ocr_total,
             "tag": self.tag_count,
-            "total": self.total,
+            "tag_total": self.tag_total,
         }), flush=True)
 
 OLLAMA_CHECK_RETRIES = 15
@@ -166,10 +172,12 @@ def needs_update(conn: sqlite3.Connection, path: str, fhash: str) -> bool:
 
 
 def run_ocr(path: Path) -> str:
+    if pytesseract is None:
+        return ""
     try:
         img = Image.open(path)
         return pytesseract.image_to_string(img).strip()
-    except Exception as e:
+    except Exception:
         return ""
 
 
@@ -190,8 +198,7 @@ def run_ollama(model: str, prompt: str, image_path: Path) -> Optional[dict]:
         resp.raise_for_status()
         data = resp.json()
         return data
-    except requests.RequestException as e:
-        print(f"  [WARN] Ollama request failed: {e}", file=sys.stderr)
+    except requests.RequestException:
         return None
 
 
@@ -201,23 +208,30 @@ def parse_tags(text: str) -> list[str]:
     return [t.lower() for t in parts if t and len(t) < 100]
 
 
-def process_image(path: Path, model: str, db_dir: Path, tracker: ProgressTracker) -> dict:
+def process_image(path: Path, model: str, db_dir: Path, tracker: ProgressTracker, ocr_available: bool = True, ollama_available: bool = True) -> dict:
     conn = get_db(db_dir)
     fhash = file_hash(path)
     rel = str(path)
 
     if not needs_update(conn, rel, fhash):
         conn.close()
-        tracker.ocr_done()
+        if ocr_available:
+            tracker.ocr_done()
         tracker.tag_done()
         return {"path": rel, "status": "skipped"}
 
-    print(f"  OCR: {path.name}", flush=True)
-    ocr_text = run_ocr(path)
-    tracker.ocr_done()
+    if ocr_available:
+        print(f"  OCR: {path.name}", flush=True)
+        ocr_text = run_ocr(path)
+        tracker.ocr_done()
+    else:
+        ocr_text = ""
 
-    print(f"  Tag: {path.name}", flush=True)
-    result = run_ollama(model, TAG_PROMPT, path)
+    if ollama_available:
+        print(f"  Tag: {path.name}", flush=True)
+        result = run_ollama(model, TAG_PROMPT, path)
+    else:
+        result = None
     tracker.tag_done()
     tags = ""
     description = ""
@@ -291,18 +305,28 @@ def main():
     print(f"Found {len(images)} images, {total_to_process} to process "
           f"(model: {args.model})")
 
-    if to_process and not ensure_ollama():
-        print("Cannot proceed without Ollama.", file=sys.stderr)
-        sys.exit(1)
+    if pytesseract is None:
+        print("OCR unavailable (tesseract/pytesseract not found).", file=sys.stderr)
+
+    ollama_available = True
+    if to_process:
+        ollama_available = ensure_ollama()
+        if not ollama_available:
+            print("Tag generation unavailable (Ollama not available).", file=sys.stderr)
 
     already_done = len(images) - total_to_process
-    tracker = ProgressTracker(len(images), already_done)
+    ocr_available = pytesseract is not None
+    ocr_total = len(images) if ocr_available else 0
+    tag_total = len(images) if ollama_available else 0
+    ocr_done = already_done if ocr_available else 0
+    tag_done = already_done if ollama_available else 0
+    tracker = ProgressTracker(ocr_total, tag_total, ocr_done, tag_done)
     start = time.time()
     tagged = skipped = errors = 0
 
     with ThreadPoolExecutor(max_workers=args.max_workers) as pool:
         futures = {
-            pool.submit(process_image, img, args.model, args.directory, tracker): img
+            pool.submit(process_image, img, args.model, args.directory, tracker, ocr_available, ollama_available): img
             for img in to_process
         }
         for future in as_completed(futures):

@@ -319,7 +319,7 @@ ApplicationWindow {
                     }
 
                     RowLayout {
-                        visible: taggingHandler && taggingHandler.running && taggingHandler.ocrTotal > 0
+                        visible: taggingHandler && taggingHandler.running
                         spacing: 6
                         Layout.fillWidth: true
 
@@ -329,22 +329,38 @@ ApplicationWindow {
                         }
 
                         Label {
+                            visible: taggingHandler.ocrTotal > 0
                             text: (taggingHandler ? taggingHandler.ocrCompleted : 0) + "/" + (taggingHandler ? taggingHandler.ocrTotal : 0)
                             color: "#aaaaaa"
                             font.bold: true
                         }
 
                         ProgressBar {
+                            visible: taggingHandler.ocrTotal > 0
                             from: 0
                             to: taggingHandler ? taggingHandler.ocrTotal : 1
                             value: taggingHandler ? taggingHandler.ocrCompleted : 0
                             Layout.fillWidth: true
                             Layout.preferredHeight: 12
                         }
+
+                        Label {
+                            visible: taggingHandler.ocrTotal === 0
+                            text: "not available"
+                            color: "#aa6600"
+                            font.italic: true
+                        }
+
+                        Button {
+                            visible: taggingHandler.ocrTotal === 0
+                            text: "attempt to install"
+                            flat: true
+                            onClicked: {}
+                        }
                     }
 
                     RowLayout {
-                        visible: taggingHandler && taggingHandler.running && taggingHandler.tagTotal > 0
+                        visible: taggingHandler && taggingHandler.running
                         spacing: 6
                         Layout.fillWidth: true
 
@@ -354,17 +370,33 @@ ApplicationWindow {
                         }
 
                         Label {
+                            visible: taggingHandler.tagTotal > 0
                             text: (taggingHandler ? taggingHandler.tagCompleted : 0) + "/" + (taggingHandler ? taggingHandler.tagTotal : 0)
                             color: "#aaaaaa"
                             font.bold: true
                         }
 
                         ProgressBar {
+                            visible: taggingHandler.tagTotal > 0
                             from: 0
                             to: taggingHandler ? taggingHandler.tagTotal : 1
                             value: taggingHandler ? taggingHandler.tagCompleted : 0
                             Layout.fillWidth: true
                             Layout.preferredHeight: 12
+                        }
+
+                        Label {
+                            visible: taggingHandler.tagTotal === 0
+                            text: "not available"
+                            color: "#aa6600"
+                            font.italic: true
+                        }
+
+                        Button {
+                            visible: taggingHandler.tagTotal === 0
+                            text: "attempt to install"
+                            flat: true
+                            onClicked: {}
                         }
                     }
                 }
