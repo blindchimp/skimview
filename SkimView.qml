@@ -599,6 +599,10 @@ ApplicationWindow {
             clip: true
             focus: true
 
+            ScrollBar.vertical: ScrollBar {
+                policy: ScrollBar.AsNeeded
+            }
+
             // Link the GridView to our FolderListModel
             model: folderModel
 
