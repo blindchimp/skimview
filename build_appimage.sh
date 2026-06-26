@@ -272,6 +272,18 @@ for plugin in "$SQL_DRIVERS"/libqsql*.so; do
     fi
 done
 
+# Override AppRun to use xdg-desktop-portal platform theme
+# The AppImage doesn't bundle libqgtk3.so, so Qt falls back to Fusion style
+# (ugly file dialog + buttons). The xdgdesktopportal theme delegates to
+# the host's native file chooser and matches the system button styling.
+cat > "$APPDIR/AppRun" << 'APPRUN'
+#!/bin/bash
+HERE="$(dirname "$(readlink -f "$0")")"
+export QT_QPA_PLATFORMTHEME=xdgdesktopportal
+exec "$HERE/usr/bin/SkimView" "$@"
+APPRUN
+chmod +x "$APPDIR/AppRun"
+
 "$LINUXDEPLOY" \
     --appdir "$APPDIR" \
     --plugin qt \
