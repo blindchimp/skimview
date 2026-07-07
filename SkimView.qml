@@ -329,14 +329,14 @@ ApplicationWindow {
                         }
 
                         Label {
-                            visible: taggingHandler.ocrTotal > 0
+                            visible: taggingHandler && taggingHandler.ocrTotal > 0
                             text: (taggingHandler ? taggingHandler.ocrCompleted : 0) + "/" + (taggingHandler ? taggingHandler.ocrTotal : 0)
                             color: "#aaaaaa"
                             font.bold: true
                         }
 
                         ProgressBar {
-                            visible: taggingHandler.ocrTotal > 0
+                            visible: taggingHandler && taggingHandler.ocrTotal > 0
                             from: 0
                             to: taggingHandler ? taggingHandler.ocrTotal : 1
                             value: taggingHandler ? taggingHandler.ocrCompleted : 0
@@ -345,14 +345,14 @@ ApplicationWindow {
                         }
 
                         Label {
-                            visible: taggingHandler.ocrTotal === 0
+                            visible: taggingHandler && taggingHandler.ocrTotal === 0
                             text: "not available"
                             color: "#aa6600"
                             font.italic: true
                         }
 
                         Button {
-                            visible: taggingHandler.ocrTotal === 0
+                            visible: taggingHandler && taggingHandler.ocrTotal === 0
                             text: "attempt to install"
                             flat: true
                             onClicked: {}
@@ -370,14 +370,14 @@ ApplicationWindow {
                         }
 
                         Label {
-                            visible: taggingHandler.tagTotal > 0
+                            visible: taggingHandler && taggingHandler.tagTotal > 0
                             text: (taggingHandler ? taggingHandler.tagCompleted : 0) + "/" + (taggingHandler ? taggingHandler.tagTotal : 0)
                             color: "#aaaaaa"
                             font.bold: true
                         }
 
                         ProgressBar {
-                            visible: taggingHandler.tagTotal > 0
+                            visible: taggingHandler && taggingHandler.tagTotal > 0
                             from: 0
                             to: taggingHandler ? taggingHandler.tagTotal : 1
                             value: taggingHandler ? taggingHandler.tagCompleted : 0
@@ -386,14 +386,14 @@ ApplicationWindow {
                         }
 
                         Label {
-                            visible: taggingHandler.tagTotal === 0
+                            visible: taggingHandler && taggingHandler.tagTotal === 0
                             text: "not available"
                             color: "#aa6600"
                             font.italic: true
                         }
 
                         Button {
-                            visible: taggingHandler.tagTotal === 0
+                            visible: taggingHandler && taggingHandler.tagTotal === 0
                             text: "attempt to install"
                             flat: true
                             onClicked: {}
@@ -788,7 +788,7 @@ ApplicationWindow {
             anchors.margins: 10
             anchors.topMargin: 5
             z: 10
-            enabled: !taggingHandler.running
+            enabled: !taggingHandler || !taggingHandler.running
             onClicked: {
                 if (taggingHandler && !taggingHandler.running)
                     taggingHandler.startForFile(fullImageUrl)
