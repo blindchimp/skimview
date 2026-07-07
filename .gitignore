@@ -5,3 +5,5 @@ build/
 CMakeLists.txt.user
 
 *.AppImage
+
+tools/__pycache__/
