@@ -208,12 +208,12 @@ def parse_tags(text: str) -> list[str]:
     return [t.lower() for t in parts if t and len(t) < 100]
 
 
-def process_image(path: Path, model: str, db_dir: Path, tracker: ProgressTracker, ocr_available: bool = True, ollama_available: bool = True) -> dict:
+def process_image(path: Path, model: str, db_dir: Path, tracker: ProgressTracker, ocr_available: bool = True, ollama_available: bool = True, force: bool = False) -> dict:
     conn = get_db(db_dir)
     fhash = file_hash(path)
     rel = str(path)
 
-    if not needs_update(conn, rel, fhash):
+    if not force and not needs_update(conn, rel, fhash):
         conn.close()
         if ocr_available:
             tracker.ocr_done()
@@ -269,7 +269,12 @@ def main():
     parser = argparse.ArgumentParser(
         description="Tag images using Ollama vision models + Tesseract OCR"
     )
-    parser.add_argument("directory", type=Path, help="Directory of images")
+    parser.add_argument("directory", nargs="?", type=Path,
+                        help="Directory of images")
+    parser.add_argument("--file", type=Path,
+                        help="Process a single image file instead of directory")
+    parser.add_argument("--force", action="store_true",
+                        help="Force reprocess even if file hash hasn't changed")
     parser.add_argument("--model", default="llava",
                         help="Ollama vision model (default: llava)")
     parser.add_argument("--max-workers", type=int, default=MAX_WORKERS,
@@ -278,20 +283,30 @@ def main():
                         help="List files that would be processed without doing it")
     args = parser.parse_args()
 
-    if not args.directory.is_dir():
-        print(f"Error: {args.directory} is not a directory", file=sys.stderr)
-        sys.exit(1)
+    if args.file:
+        if not args.file.is_file():
+            print(f"Error: {args.file} is not a file", file=sys.stderr)
+            sys.exit(1)
+        images = [args.file]
+        db_dir = args.file.parent
+        force = args.force
+    else:
+        if not args.directory or not args.directory.is_dir():
+            print(f"Error: {args.directory} is not a directory", file=sys.stderr)
+            sys.exit(1)
+        images = collect_images(args.directory)
+        db_dir = args.directory
+        force = args.force
 
-    images = collect_images(args.directory)
     if not images:
         print("No supported images found.")
         return
 
     # Filter to images needing processing
-    conn = get_db(args.directory)
+    conn = get_db(db_dir)
     to_process = []
     for img in images:
-        if args.dry_run or needs_update(conn, str(img), file_hash(img)):
+        if args.dry_run or force or needs_update(conn, str(img), file_hash(img)):
             to_process.append(img)
 
     if args.dry_run:
@@ -326,7 +341,7 @@ def main():
 
     with ThreadPoolExecutor(max_workers=args.max_workers) as pool:
         futures = {
-            pool.submit(process_image, img, args.model, args.directory, tracker, ocr_available, ollama_available): img
+            pool.submit(process_image, img, args.model, db_dir, tracker, ocr_available, ollama_available, force): img
             for img in to_process
         }
         for future in as_completed(futures):

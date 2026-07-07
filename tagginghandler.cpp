@@ -88,6 +88,56 @@ void TaggingHandler::start(const QString &folderUrl)
     emit runningChanged();
 }
 
+void TaggingHandler::startForFile(const QString &fileUrl)
+{
+    if (m_process && m_process->state() != QProcess::NotRunning)
+    {
+        qWarning() << "Tagging already running";
+        return;
+    }
+
+    m_errorMessage.clear();
+    emit errorMessageChanged();
+
+    QString filePath = fileUrl;
+    if (filePath.startsWith("file://"))
+        filePath = QUrl(filePath).toLocalFile();
+
+    QString script = findScript();
+    if (script.isEmpty())
+    {
+        m_errorMessage = "Could not find tools/tag_images.py. Make sure the tools directory is present.";
+        emit errorMessageChanged();
+        emit finished(false);
+        return;
+    }
+
+    if (m_process)
+    {
+        m_process->deleteLater();
+        m_process = nullptr;
+    }
+
+    m_ocrCompleted = 0;
+    m_ocrTotal = 1;
+    m_tagCompleted = 0;
+    m_tagTotal = 1;
+    m_readBuffer.clear();
+    emit progressChanged();
+
+    m_process = new QProcess(this);
+    connect(m_process, &QProcess::readyReadStandardOutput,
+            this, &TaggingHandler::onReadyReadStdout);
+    connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, &TaggingHandler::onProcessFinished);
+    connect(m_process, &QProcess::errorOccurred,
+            this, &TaggingHandler::onErrorOccurred);
+
+    m_process->setProcessChannelMode(QProcess::MergedChannels);
+    m_process->start("python3", {script, "--file", filePath, "--force"});
+    emit runningChanged();
+}
+
 int TaggingHandler::ocrCompleted() const { return m_ocrCompleted; }
 int TaggingHandler::ocrTotal() const { return m_ocrTotal; }
 int TaggingHandler::tagCompleted() const { return m_tagCompleted; }

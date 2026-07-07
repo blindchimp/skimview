@@ -404,10 +404,14 @@ ApplicationWindow {
         }
     }
 
-    // Re-check tags.db when tagging finishes
+    // Re-check tags.db and refresh current image info when tagging finishes
     Connections {
         target: taggingHandler
-        function onFinished(success) { checkTagsDb() }
+        function onFinished(success) {
+            checkTagsDb()
+            if (fullImageUrl !== "")
+                loadImageInfo(fullImageUrl)
+        }
     }
 
     // Check if tags.db exists and whether there are untagged files
@@ -772,6 +776,23 @@ ApplicationWindow {
             anchors.margins: 10
             z: 10
             onClicked: showOcrPanel = !showOcrPanel
+        }
+
+        // Re-process OCR & tags for this image
+        Button {
+            id: retagButton
+            visible: fullImageUrl !== "" && !showOcrPanel
+            text: "Re-process OCR & Tags"
+            anchors.right: parent.right
+            anchors.top: ocrButton.bottom
+            anchors.margins: 10
+            anchors.topMargin: 5
+            z: 10
+            enabled: !taggingHandler.running
+            onClicked: {
+                if (taggingHandler && !taggingHandler.running)
+                    taggingHandler.startForFile(fullImageUrl)
+            }
         }
 
         // Tags bar at bottom of full image view

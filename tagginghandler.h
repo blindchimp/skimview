@@ -24,6 +24,7 @@ public:
     ~TaggingHandler();
 
     Q_INVOKABLE void start(const QString &folderUrl);
+    Q_INVOKABLE void startForFile(const QString &fileUrl);
     Q_INVOKABLE void cancel();
 
     bool isRunning() const;
