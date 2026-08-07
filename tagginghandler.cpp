@@ -10,6 +10,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QUrl>
+#include <QProcessEnvironment>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QDebug>
@@ -84,6 +85,7 @@ void TaggingHandler::start(const QString &folderUrl)
             this, &TaggingHandler::onErrorOccurred);
 
     m_process->setProcessChannelMode(QProcess::MergedChannels);
+    setSanePath(m_process);
     m_process->start("python3", {script, folderPath});
     emit runningChanged();
 }
@@ -134,6 +136,7 @@ void TaggingHandler::startForFile(const QString &fileUrl)
             this, &TaggingHandler::onErrorOccurred);
 
     m_process->setProcessChannelMode(QProcess::MergedChannels);
+    setSanePath(m_process);
     m_process->start("python3", {script, "--file", filePath, "--force"});
     emit runningChanged();
 }
@@ -287,6 +290,20 @@ void TaggingHandler::killProcessGroup()
         p.waitForFinished(5000);
     }
     m_process->kill();
+}
+
+void TaggingHandler::setSanePath(QProcess *process) const
+{
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    QString path = env.value("PATH");
+    QStringList entries = path.split(':', Qt::SkipEmptyParts);
+    for (const QString &dir : {QStringLiteral("/opt/homebrew/bin"),
+                               QStringLiteral("/usr/local/bin")}) {
+        if (!entries.contains(dir))
+            entries.prepend(dir);
+    }
+    env.insert("PATH", entries.join(':'));
+    process->setProcessEnvironment(env);
 }
 
 QString TaggingHandler::findScript() const

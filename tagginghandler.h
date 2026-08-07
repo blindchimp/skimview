@@ -50,6 +50,7 @@ private:
     void killProcessGroup();
     QString findScript() const;
     QString parseDependencyHint(const QString &output) const;
+    void setSanePath(QProcess *process) const;
 
     QProcess *m_process;
     QString m_errorMessage;

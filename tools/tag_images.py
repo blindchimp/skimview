@@ -39,6 +39,8 @@ SUPPORTED_EXTENSIONS = frozenset({
     ".xbm", ".xpm", ".heic", ".heif", ".avif",
 })
 MAX_WORKERS = 4
+MAX_OCR_PIXELS = 2500  # largest image dimension handed to tesseract
+OCR_TIMEOUT_SECONDS = 120
 
 
 class ProgressTracker:
@@ -166,19 +168,68 @@ def file_hash(path: Path) -> str:
 
 def needs_update(conn: sqlite3.Connection, path: str, fhash: str) -> bool:
     row = conn.execute(
-        "SELECT file_hash FROM images WHERE path = ?", (path,)
+        "SELECT file_hash, tags, ocr_text FROM images WHERE path = ?", (path,)
     ).fetchone()
-    return row is None or row["file_hash"] != fhash
+    if row is None or row["file_hash"] != fhash:
+        return True
+    if not (row["tags"] or "").strip():
+        return True
+    if row["ocr_text"] is None:
+        return True
+    return False
 
 
-def run_ocr(path: Path) -> str:
+def _find_tesseract() -> Optional[str]:
+    """Locate the tesseract binary, independent of the current PATH."""
+    candidates = []
+    for name in ("tesseract", "tesseract.exe"):
+        which = shutil.which(name)
+        if which:
+            candidates.append(which)
+    for candidate in [
+        "/opt/homebrew/bin/tesseract",
+        "/usr/local/bin/tesseract",
+        "/opt/local/bin/tesseract",
+        os.path.expanduser("~/bin/tesseract"),
+    ]:
+        if candidate not in candidates:
+            candidates.append(candidate)
+    for candidate in candidates:
+        if candidate and os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def _prepare_for_ocr(img: Image.Image) -> Image.Image:
+    """Downscale very large images; tesseract can hang for hours on 12MP+ frames."""
+    if max(img.size) > MAX_OCR_PIXELS:
+        img = img.convert("RGB")
+        ratio = MAX_OCR_PIXELS / max(img.size)
+        img = img.resize((max(1, int(img.width * ratio)), max(1, int(img.height * ratio))))
+    elif img.mode not in ("RGB", "L"):
+        img = img.convert("RGB")
+    return img
+
+
+def run_ocr(path: Path) -> Optional[str]:
+    """OCR an image.
+
+    Returns the extracted text ("" if the image has no readable text), or
+    None if OCR could not run (pytesseract/tesseract unavailable, the image
+    could not be opened, or tesseract timed out). None is stored as NULL so
+    the file is retried on the next run instead of being skipped forever.
+    """
     if pytesseract is None:
-        return ""
+        return None
+    tesseract_bin = _find_tesseract()
+    if tesseract_bin:
+        pytesseract.pytesseract.tesseract_cmd = tesseract_bin
     try:
-        img = Image.open(path)
-        return pytesseract.image_to_string(img).strip()
-    except Exception:
-        return ""
+        img = _prepare_for_ocr(Image.open(path))
+        return pytesseract.image_to_string(img, timeout=OCR_TIMEOUT_SECONDS).strip()
+    except Exception as e:
+        print(f"  OCR failed for {path.name}: {e}", file=sys.stderr)
+        return None
 
 
 def run_ollama(model: str, prompt: str, image_path: Path) -> Optional[dict]:
@@ -213,33 +264,59 @@ def process_image(path: Path, model: str, db_dir: Path, tracker: ProgressTracker
     fhash = file_hash(path)
     rel = str(path)
 
-    if not force and not needs_update(conn, rel, fhash):
+    row = conn.execute(
+        "SELECT file_hash, tags, ocr_text, description FROM images WHERE path = ?",
+        (rel,),
+    ).fetchone()
+
+    hash_changed = row is None or row["file_hash"] != fhash
+    existing_tags = (row["tags"] or "") if row is not None else ""
+    existing_ocr = row["ocr_text"] if row is not None else None
+    existing_desc = (row["description"] or "") if row is not None else ""
+
+    # A row needs re-OCR when it was never successfully OCR'd (NULL value).
+    # A row needs (re-)tagging when it has no tags or its hash changed.
+    need_ocr = force or row is None or hash_changed or existing_ocr is None
+    need_tags = force or row is None or hash_changed or not existing_tags.strip()
+
+    if not need_ocr and not need_tags:
         conn.close()
         if ocr_available:
             tracker.ocr_done()
         tracker.tag_done()
         return {"path": rel, "status": "skipped"}
 
-    if ocr_available:
-        print(f"  OCR: {path.name}", flush=True)
-        ocr_text = run_ocr(path)
-        tracker.ocr_done()
+    if need_ocr:
+        if ocr_available:
+            print(f"  OCR: {path.name}", flush=True)
+            ocr_text = run_ocr(path)
+            tracker.ocr_done()
+        else:
+            ocr_text = None
     else:
-        ocr_text = ""
+        ocr_text = existing_ocr
+        if ocr_available:
+            tracker.ocr_done()
 
-    if ollama_available:
-        print(f"  Tag: {path.name}", flush=True)
-        result = run_ollama(model, TAG_PROMPT, path)
+    if need_tags:
+        if ollama_available:
+            print(f"  Tag: {path.name}", flush=True)
+            result = run_ollama(model, TAG_PROMPT, path)
+        else:
+            result = None
+        tracker.tag_done()
+        tags = ""
+        description = ""
+        if result and "response" in result:
+            raw = result["response"]
+            tags = ",".join(parse_tags(raw))
+            if not tags:
+                description = raw[:500]
     else:
-        result = None
-    tracker.tag_done()
-    tags = ""
-    description = ""
-    if result and "response" in result:
-        raw = result["response"]
-        tags = ",".join(parse_tags(raw))
-        if not tags:
-            description = raw[:500]
+        tags = existing_tags
+        description = existing_desc
+        if ollama_available:
+            tracker.tag_done()
 
     conn.execute(
         """INSERT INTO images (path, file_hash, tags, ocr_text, description, model)
@@ -255,7 +332,7 @@ def process_image(path: Path, model: str, db_dir: Path, tracker: ProgressTracker
     )
     conn.commit()
     conn.close()
-    return {"path": rel, "status": "tagged", "tags": tags, "ocr_len": len(ocr_text)}
+    return {"path": rel, "status": "tagged", "tags": tags, "ocr_len": len(ocr_text or "")}
 
 
 def collect_images(root: Path) -> list[Path]:
