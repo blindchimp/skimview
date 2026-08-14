@@ -875,10 +875,49 @@ ApplicationWindow {
         sequence: "d"
         enabled: fullImageUrl !== ""
         onActivated: {
+            // Locate the displayed image by URL rather than relying on
+            // gridCurrentIndex, which can go stale when the model refreshes
+            // after a previous deletion.
+            var idx = -1
+            for (var i = 0; i < folderModel.count; i++) {
+                if (folderModel.get(i, "fileUrl") === fullImageUrl) {
+                    idx = i
+                    break
+                }
+            }
             trashHandler.moveToTrash(fullImageUrl)
-            // Load next image instead of going back to thumbnails
-            gridCurrentIndex = (gridCurrentIndex + 1) % folderModel.count
+            if (folderModel.count === 0) {
+                fullImageUrl = ""
+                return
+            }
+            if (idx < 0)
+                idx = 0
+            gridCurrentIndex = (idx + 1) % folderModel.count
             fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+        }
+    }
+
+    // Keep the selected index pointing at the displayed image after the
+    // model refreshes (e.g. FolderListModel notices a deleted file).
+    function syncGridIndexToUrl() {
+        if (fullImageUrl === "")
+            return
+        for (var i = 0; i < folderModel.count; i++) {
+            if (folderModel.get(i, "fileUrl") === fullImageUrl) {
+                gridCurrentIndex = i
+                gridView.currentIndex = i
+                return
+            }
+        }
+        // The displayed image is no longer in the model (e.g. last image
+        // was deleted), so fall back to the grid instead of a broken image.
+        fullImageUrl = ""
+    }
+
+    Connections {
+        target: folderModel
+        function onCountChanged() {
+            syncGridIndexToUrl()
         }
     }
 
@@ -886,12 +925,7 @@ ApplicationWindow {
     onFullImageUrlChanged: {
         loadImageInfo(fullImageUrl)
         if (fullImageUrl !== "") {
-            for (var i = 0; i < folderModel.count; i++) {
-                if (folderModel.get(i, "fileUrl") === fullImageUrl) {
-                    gridCurrentIndex = i
-                    break
-                }
-            }
+            syncGridIndexToUrl()
         } else {
             zoomScale = 1.0
             panX = 0
