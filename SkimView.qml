@@ -20,6 +20,9 @@ ApplicationWindow {
 
     property string fullImageUrl: ""
     property int gridCurrentIndex: -1
+    // Index of the image being deleted, used to advance to the next one after
+    // the model refreshes (FolderListModel updates asynchronously).
+    property int pendingDeleteIndex: -1
     property real zoomScale: 1.0
     property real initialZoomScale: 1.0
     property real panX: 0
@@ -875,25 +878,23 @@ ApplicationWindow {
         sequence: "d"
         enabled: fullImageUrl !== ""
         onActivated: {
-            // Locate the displayed image by URL rather than relying on
-            // gridCurrentIndex, which can go stale when the model refreshes
-            // after a previous deletion.
-            var idx = -1
-            for (var i = 0; i < folderModel.count; i++) {
-                if (folderModel.get(i, "fileUrl") === fullImageUrl) {
-                    idx = i
-                    break
-                }
-            }
-            trashHandler.moveToTrash(fullImageUrl)
-            if (folderModel.count === 0) {
+            // Read everything from the model BEFORE moving the file: the
+            // FolderListModel re-lists the directory asynchronously (and emits
+            // countChanged on every re-list), so its index/count/get are only
+            // consistent while we're still inside this handler.
+            var deleteUrl = fullImageUrl
+            var idx = folderModel.indexOf(deleteUrl)
+            var count = folderModel.count
+            var nextIdx = (idx >= 0 && count > 1) ? (idx + 1) % count : -1
+            var nextUrl = nextIdx >= 0 ? folderModel.get(nextIdx, "fileUrl") : ""
+            pendingDeleteIndex = idx
+            trashHandler.moveToTrash(deleteUrl)
+            if (nextUrl === "") {
                 fullImageUrl = ""
                 return
             }
-            if (idx < 0)
-                idx = 0
-            gridCurrentIndex = (idx + 1) % folderModel.count
-            fullImageUrl = folderModel.get(gridCurrentIndex, "fileUrl")
+            gridCurrentIndex = nextIdx
+            fullImageUrl = nextUrl
         }
     }
 
@@ -902,15 +903,28 @@ ApplicationWindow {
     function syncGridIndexToUrl() {
         if (fullImageUrl === "")
             return
-        for (var i = 0; i < folderModel.count; i++) {
-            if (folderModel.get(i, "fileUrl") === fullImageUrl) {
-                gridCurrentIndex = i
-                gridView.currentIndex = i
-                return
-            }
+        var i = folderModel.indexOf(fullImageUrl)
+        if (i >= 0) {
+            gridCurrentIndex = i
+            gridView.currentIndex = i
+            pendingDeleteIndex = -1
+            return
         }
-        // The displayed image is no longer in the model (e.g. last image
-        // was deleted), so fall back to the grid instead of a broken image.
+        // The displayed image is no longer in the model. If we just deleted
+        // it, advance to the next image (the one that slid into its slot)
+        // instead of going back to the grid.
+        if (folderModel.count === 0) {
+            fullImageUrl = ""
+            return
+        }
+        if (pendingDeleteIndex >= 0) {
+            var next = Math.min(pendingDeleteIndex, folderModel.count - 1)
+            pendingDeleteIndex = -1
+            gridCurrentIndex = next
+            fullImageUrl = folderModel.get(next, "fileUrl")
+            return
+        }
+        // The image was removed externally; fall back to the grid.
         fullImageUrl = ""
     }
 
