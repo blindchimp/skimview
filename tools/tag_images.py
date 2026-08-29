@@ -231,7 +231,7 @@ def run_ocr(path: Path) -> Optional[str]:
         print(f"  OCR failed for {path.name}: {e}", file=sys.stderr)
         return None
 
-
+"""
 def run_ollama(model: str, prompt: str, image_path: Path) -> Optional[dict]:
     with open(image_path, "rb") as f:
         b64 = base64.b64encode(f.read()).decode("utf-8")
@@ -253,6 +253,44 @@ def run_ollama(model: str, prompt: str, image_path: Path) -> Optional[dict]:
     except requests.RequestException:
         return None
 
+"""
+
+def run_ollama(model: str, prompt: str, image_path: Path) -> Optional[dict]:
+    with open(image_path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode("utf-8")
+
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "images": [b64],
+        "stream": False,
+        "num_predict": 128,
+        "options": {
+            "num_ctx": 32768,
+        },
+    }
+
+    print(f"Sending image {image_path} to Ollama")
+    print(f"Model: {model}")
+    print(f"Prompt: {prompt}")
+    print(f"Image base64 length: {len(b64)}")
+
+    try:
+        resp = requests.post(
+            f"{OLLAMA_BASE_URL}/api/generate",
+            json=payload,
+            timeout=120,
+        )
+
+        print(f"Ollama HTTP status: {resp.status_code}")
+        print(f"Ollama response: {resp.text}")
+
+        resp.raise_for_status()
+        return resp.json()
+
+    except requests.RequestException as e:
+        print(f"Ollama request failed: {e}")
+        return None
 
 def parse_tags(text: str) -> list[str]:
     text = text.strip().strip("[]()")
