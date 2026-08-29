@@ -243,6 +243,7 @@ def run_ollama(model: str, prompt: str, image_path: Path) -> Optional[dict]:
                 "prompt": prompt,
                 "images": [b64],
                 "stream": False,
+                "num_predict": 128,
             },
             timeout=120,
         )
