@@ -5,7 +5,7 @@ Scans a directory for images, runs OCR + vision model tagging,
 and stores results in a local tags.db SQLite database.
 
 Usage:
-    python tools/tag_images.py ~/Pictures [--model llava]
+    python tools/tag_images.py ~/Pictures [--model qwen3-vl]
 """
 
 import argparse
@@ -391,8 +391,8 @@ def main():
                         help="Process a single image file instead of directory")
     parser.add_argument("--force", action="store_true",
                         help="Force reprocess even if file hash hasn't changed")
-    parser.add_argument("--model", default="llava",
-                        help="Ollama vision model (default: llava)")
+    parser.add_argument("--model", default="qwen3-vl",
+                        help="Ollama vision model (default: qwen3-vl)")
     parser.add_argument("--max-workers", type=int, default=MAX_WORKERS,
                         help=f"Parallel workers (default: {MAX_WORKERS})")
     parser.add_argument("--dry-run", action="store_true",
