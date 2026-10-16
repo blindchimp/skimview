@@ -55,6 +55,7 @@ private:
     QProcess *m_process;
     QString m_errorMessage;
     QByteArray m_readBuffer;
+    QString m_fullOutput;
     int m_ocrCompleted = 0;
     int m_ocrTotal = 0;
     int m_tagCompleted = 0;

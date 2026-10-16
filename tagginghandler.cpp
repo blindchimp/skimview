@@ -74,6 +74,7 @@ void TaggingHandler::start(const QString &folderUrl)
     m_tagCompleted = 0;
     m_tagTotal = 0;
     m_readBuffer.clear();
+    m_fullOutput.clear();
     emit progressChanged();
 
     m_process = new QProcess(this);
@@ -125,6 +126,7 @@ void TaggingHandler::startForFile(const QString &fileUrl)
     m_tagCompleted = 0;
     m_tagTotal = 1;
     m_readBuffer.clear();
+    m_fullOutput.clear();
     emit progressChanged();
 
     m_process = new QProcess(this);
@@ -163,6 +165,7 @@ void TaggingHandler::cancel()
     m_tagCompleted = 0;
     m_tagTotal = 0;
     m_readBuffer.clear();
+    m_fullOutput.clear();
     emit progressChanged();
 
     m_errorMessage = "Tagging cancelled.";
@@ -186,7 +189,9 @@ void TaggingHandler::onReadyReadStdout()
     if (!m_process)
         return;
 
-    m_readBuffer.append(m_process->readAllStandardOutput());
+    QByteArray chunk = m_process->readAllStandardOutput();
+    m_fullOutput += QString::fromUtf8(chunk);
+    m_readBuffer.append(chunk);
 
     while (true)
     {
@@ -229,7 +234,10 @@ void TaggingHandler::onProcessFinished(int exitCode, QProcess::ExitStatus status
     if (m_process && m_process->bytesAvailable() > 0)
         onReadyReadStdout();
 
-    QString output = m_process ? m_process->readAll().trimmed() : QString();
+    QString output = m_fullOutput.trimmed();
+    constexpr int kMaxOutputChars = 64 * 1024;
+    if (output.size() > kMaxOutputChars)
+        output = output.right(kMaxOutputChars);
 
     // Capture output to /tmp/tag.out for debugging (always)
     QFile outFile("/tmp/tag.out");
